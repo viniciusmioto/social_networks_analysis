@@ -1,3 +1,6 @@
-# tcc
+# Social Network Analysis 
+## Final Project for BSc. in Computer Science
+## Universidade Federal do Paraná
 
-Se eu vi mais longe, foi por estar sobre ombros de gigantes.
+### Student: Vinícius Mioto
+### Professor: André Luís Vignatti
