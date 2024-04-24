@@ -197,8 +197,12 @@ for i in range(
         print(f"File {file_name} not found.")
 
 
+print('Motifs loaded.')
 # Read the real-world graph
 real_world_graph = read_graph_from_edge_list("../data/twitter/12831.edges")
+
+print('Real-world graph loaded.')
+print('Starting to count motifs in the real-world graph...')
 
 # Count the occurrences of each motif in the real-world graph
 counts = subgraph_count(real_world_graph, motifs)
@@ -207,6 +211,7 @@ counts = subgraph_count(real_world_graph, motifs)
 counts_df = pd.DataFrame(counts.items(), columns=["Motif", "Count"])
 counts_df.to_csv("../data/sheets/motif_counts.csv", index=False)
 
+print('Counts for the original saved to CSV file.')
 
 # Generate random graphs using the configuration model
 seed_list = [i for i in range(20)]
@@ -216,13 +221,17 @@ random_graphs = [
     for i in range(20)
 ]
 
+print('Random graphs generated.')
+
 del real_world_graph
 
-# Count the occurrences of each motif in each random graph
-random_graph_counts = [
-    subgraph_count(random_graph, motifs) for random_graph in random_graphs
-]
+print('Starting to count motifs in random graphs...')
 
+# Count the occurrences of each motif in each random graph
+for i, random_graph in enumerate(random_graphs):
+    print(f'Counting motifs in random graph {i+1}')
+    random_graph_counts = subgraph_count(random_graph, motifs)
+   
 del random_graphs
 
 # Create a dataframe with the counts for each random graph and save it to a CSV file
@@ -232,7 +241,11 @@ random_counts_df.to_csv(
     "../data/sheets/random_counts.csv", index=[f"random_graph_{i+1}" for i in range(10)]
 )
 
+print('Counts for the random graphs saved to CSV file.')
+
 del random_counts_df
+
+print('Calculating average counts, standard deviation and Z-scores...')
 
 # Calculate the average of the counts for each motif in the random graphs
 average_counts = {
@@ -272,3 +285,5 @@ motif_df.drop(columns="Motif", inplace=True)
 
 # Save the dataframe to a CSV file
 motif_df.to_csv("../data/sheets/motifs.csv")
+
+print('Data saved to CSV file.')
