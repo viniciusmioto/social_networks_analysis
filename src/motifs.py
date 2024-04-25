@@ -197,12 +197,12 @@ for i in range(
         print(f"File {file_name} not found.")
 
 
-print('Motifs loaded.')
+print("Motifs loaded.")
 # Read the real-world graph
-real_world_graph = read_graph_from_edge_list("../data/twitter/12831.edges")
+real_world_graph = read_graph_from_edge_list("../data/tests/synthetic1.edges")
 
-print('Real-world graph loaded.')
-print('Starting to count motifs in the real-world graph...')
+print("Real-world graph loaded.")
+print("Starting to count motifs in the real-world graph...")
 
 # Count the occurrences of each motif in the real-world graph
 counts = subgraph_count(real_world_graph, motifs)
@@ -211,7 +211,7 @@ counts = subgraph_count(real_world_graph, motifs)
 counts_df = pd.DataFrame(counts.items(), columns=["Motif", "Count"])
 counts_df.to_csv("../data/sheets/motif_counts.csv", index=False)
 
-print('Counts for the original saved to CSV file.')
+print("Counts for the original saved to CSV file.")
 
 # Generate random graphs using the configuration model
 seed_list = [i for i in range(20)]
@@ -221,69 +221,60 @@ random_graphs = [
     for i in range(20)
 ]
 
-print('Random graphs generated.')
+print("Random graphs generated.")
 
 del real_world_graph
 
-print('Starting to count motifs in random graphs...')
+print("Starting to count motifs in random graphs...")
 
 # Count the occurrences of each motif in each random graph
 for i, random_graph in enumerate(random_graphs):
-    print(f'Counting motifs in random graph {i+1}')
+    print(f"Counting motifs in random graph {i+1}")
     random_graph_counts = subgraph_count(random_graph, motifs)
-   
+
 del random_graphs
 
 # Create a dataframe with the counts for each random graph and save it to a CSV file
-random_counts_df = pd.DataFrame(random_graph_counts)
-random_counts_df.columns = [f"Motif {i+1}" for i in range(13)]
-random_counts_df.to_csv(
-    "../data/sheets/random_counts.csv", index=[f"random_graph_{i+1}" for i in range(10)]
+random_counts_df = pd.DataFrame(
+    columns=[f"Motif {i+1}" for i in range(13)],
+    index=range(1, len(motifs) + 1),
 )
 
-print('Counts for the random graphs saved to CSV file.')
+for i, counts in enumerate(random_graph_counts):
+    random_counts_df.loc[i + 1] = counts
 
-del random_counts_df
+random_counts_df.to_csv("../data/sheets/random_counts.csv")
 
-print('Calculating average counts, standard deviation and Z-scores...')
+print("Counts for the random graphs saved to CSV file.")
+
+print("Calculating average counts, standard deviation, and Z-scores...")
 
 # Calculate the average of the counts for each motif in the random graphs
-average_counts = {
-    i: sts.mean([counts[i] for counts in random_graph_counts])
-    for i in range(len(motifs))
-}
+average_counts = random_counts_df.mean()
 
-# Calculate the standard deviation of subgraph counts in random graphs
-std_dev_counts = {
-    i: sts.stdev([counts[i] for counts in random_graph_counts])
-    for i in range(len(motifs))
-}
+# Calculate the standard deviation of the counts for each motif in the random graphs
+std_dev = random_counts_df.std()
 
-# Calculate the Z-score of subgraph counts in real-world graph
-z_scores = {}
-for i in range(len(motifs)):
-    if std_dev_counts[i] != 0:
-        z_scores[i] = (counts[i] - average_counts[i]) / std_dev_counts[i]
-    else:
-        # Handle the case when standard deviation is zero
-        z_scores[i] = float("nan")
+# Calculate the Z-scores for each motif
+z_scores = (counts_df["Count"] - average_counts) / std_dev
 
 
-# generate data frame with average counts, standard deviation and z-scores
-motif_df = pd.DataFrame(
+print(average_counts)
+print(std_dev)
+print(z_scores)
+
+# Create a dataframe with the average counts, standard deviation, and Z-scores
+summary_df = pd.DataFrame(
     {
-        "Motif": list(average_counts.keys()),
-        "Average Count": list(average_counts.values()),
-        "Standard Deviation": list(std_dev_counts.values()),
-        "Z-Score": list(z_scores.values()),
+        "Motif": counts_df["Motif"],
+        "Count": counts_df["Count"],
+        "Average": average_counts,
+        "Standard Deviation": std_dev,
+        "Z-Score": z_scores,
     }
 )
 
-motif_df["Motif"] = motif_df["Motif"] + 1
-motif_df.index = motif_df["Motif"]
-motif_df.drop(columns="Motif", inplace=True)
+# Save the summary dataframe to a CSV file
+summary_df.to_csv("../data/sheets/motif_summary.csv", index=False)
 
-# Save the dataframe to a CSV file
-motif_df.to_csv("../data/sheets/motifs.csv")
-
-print('Data saved to CSV file.')
+print("Summary saved to CSV file.")
