@@ -250,6 +250,9 @@ print("Real-world graphs loaded.")
 
 # Iterate over each real-world graph
 for graph_index, real_world_graph in enumerate(real_world_graphs):
+    print(f"\nStarting analysis {graph_names[graph_index]} | Graph {graph_index+1}/{len(real_world_graphs)}\n")
+    
+    print("Counting motifs in the original graph...")
     # Count the occurrences of each motif in the real-world graph
     counts = subgraph_count(real_world_graph, motifs)
 
