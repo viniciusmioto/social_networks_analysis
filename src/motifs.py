@@ -10,7 +10,22 @@
 # ----------------------------------------------- #
 
 
+# -------------------- CONSTANTS -------------------- 
+
+# Directory containing the network files (edge lists)
+GRAPH_FILES_DIRECTORY = "../data/twitter/"
+
+# Directory containing the edge list files
+MOTIFS_PATH = "../data/motifs/"
+
+# Number of random graphs to generate
+NUM_RANDOM_GRAPHS = 25
+
+# Directory to save the results
+RESULTS_DIRECTORY = "../data/sheets/"
+
 # -------------------- LIBRARIES -------------------- #
+
 
 import pandas as pd
 import numpy as np
@@ -27,6 +42,11 @@ import random
 # -------------------- FUNCTIONS -------------------- #
 
 
+def get_graph_name(file_path):
+    """Extracts the name of a graph from its file path."""
+    return os.path.basename(file_path).split(".")[0]
+
+
 def read_graph_from_edge_list(file_path):
     """Reads a directed graph from an edge list file."""
     G = nx.DiGraph()
@@ -37,6 +57,25 @@ def read_graph_from_edge_list(file_path):
                 source, target = edge
                 G.add_edge(source, target)
     return G
+
+
+def read_graphs_from_directory(directory):
+    """
+    Reads all graphs from a directory containing edge list files.
+
+    Parameters:
+        directory (str): The path to the directory containing the edge list files.
+
+    Returns:
+        dict: key: graph name, value: NetworkX graph object.
+    """
+    graphs = {}
+    for file in os.listdir(directory):
+        if file.endswith(".edges"):
+            graph_name = get_graph_name(file)
+            graph = read_graph_from_edge_list(os.path.join(directory, file))
+            graphs[graph_name] = graph
+    return graphs
 
 
 def generate_subgraphs(graph, size):
@@ -175,20 +214,17 @@ def generate_configuration_model_graph(original_graph, seed):
     return random_graph
 
 
-#-------------------- MAIN -------------------- #
-
-# Directory containing the edge list files
-directory = "../data/motifs/"
+# -------------------- MAIN -------------------- #
 
 # List to store the graphs
 motifs = []
 
-# Iterate over each file in the directory
+# Iterate over each file in the MOTIFS_PATH
 for i in range(
     1, 14
 ):  # Assuming files are named file1.edges, file2.edges, ..., file13.edges
     file_name = f"motif{i}.edges"
-    file_path = os.path.join(directory, file_name)
+    file_path = os.path.join(MOTIFS_PATH, file_name)
     if os.path.exists(file_path):
         # Read the graph from the edge list file
         motif = read_graph_from_edge_list(file_path)
@@ -199,92 +235,117 @@ for i in range(
 
 
 print("Motifs loaded.")
-# Read the real-world graph
-real_world_graph = read_graph_from_edge_list("../data/twitter/12831.edges")
-
-print("Real-world graph loaded.")
-print("Starting to count motifs in the real-world graph...")
 
 
-# Count the occurrences of each motif in the real-world graph
-counts = subgraph_count(real_world_graph, motifs)
+# Read all Real-World Graphs from the directory
+real_world_graphs = []
+graph_names = []
 
-# Create a dataframe with the counts and save it to a CSV file
-# This dataframe has one line, and each column corresponds to a motif
-motif_counts_df = pd.DataFrame(counts, index=['original'])
-motif_counts_df.to_csv("../data/sheets/motif_counts.csv", index=False)
+# Add all graphs to the list of NX graphs
+for graph_name, graph in read_graphs_from_directory(GRAPH_FILES_DIRECTORY).items():
+    real_world_graphs.append(graph)
+    graph_names.append(graph_name)
 
-# Rename the columns to match the motif numbers
-motif_counts_df.columns = [f"motif_{i}" for i in range(1, 14)]
+print("Real-world graphs loaded.")
 
-print("Counts for the original saved to CSV file.")
+# Iterate over each real-world graph
+for graph_index, real_world_graph in enumerate(real_world_graphs):
+    # Count the occurrences of each motif in the real-world graph
+    counts = subgraph_count(real_world_graph, motifs)
 
+    # Create a dataframe with the counts and save it to a CSV file
+    # This dataframe has one line, and each column corresponds to a motif
+    motif_counts_df = pd.DataFrame(counts, index=["original"])
 
-# Generate random graphs using the configuration model
-seed_list = [i for i in range(20)]
+    # Save the counts to a CSV file
+    # motif_counts_df.to_csv("../data/sheets/motif_counts.csv", index=False)
 
-random_graphs = [
-    generate_configuration_model_graph(real_world_graph, seed_list[i])
-    for i in range(20)
-]
+    # Rename the columns to match the motif numbers
+    motif_counts_df.columns = [f"motif_{i}" for i in range(1, 14)]
 
-print("Random graphs generated.")
+    print("Counts for the original saved to CSV file.")
 
+    # Generate random graphs using the configuration model
+    seed_list = [i for i in range(NUM_RANDOM_GRAPHS)]
 
-# Print a message indicating the start of counting motifs in random graphs
-print("Starting to count motifs in random graphs...")
+    random_graphs = [
+        generate_configuration_model_graph(real_world_graph, seed_list[i])
+        for i in range(NUM_RANDOM_GRAPHS)
+    ]
 
-# Initialize an empty list to store counts for each random graph
-random_graph_counts_all = []
+    print("Random graphs generated.")
 
-# Count the occurrences of each motif in each random graph
-for i, random_graph in enumerate(random_graphs):
-    print(f"Counting motifs in random graph {i+1}")
-    random_graph_counts = subgraph_count(random_graph, motifs)
-    random_graph_counts_all.append(random_graph_counts)
+    # Print a message indicating the start of counting motifs in random graphs
+    print("Starting to count motifs in random graphs...")
 
-# Create a DataFrame to store the counts for each random graph
-columns = [f"motif_{i+1}" for i in range(len(motifs))]
-index = [f"rand_graph_{i+1}" for i in range(len(random_graphs))]
-random_counts_df = pd.DataFrame(columns=columns, index=index)
+    # Initialize an empty list to store counts for each random graph
+    random_graph_counts_all = []
 
-# Fill the DataFrame with the counts for each random graph
-for i, random_graph_counts in enumerate(random_graph_counts_all):
-    for j, count in random_graph_counts.items():
-        random_counts_df.loc[f"rand_graph_{i+1}", f"motif_{j+1}"] = count
+    # Count the occurrences of each motif in each random graph
+    for i, random_graph in enumerate(random_graphs):
+        print(f"Counting motifs in random graph {i+1}")
+        random_graph_counts = subgraph_count(random_graph, motifs)
+        random_graph_counts_all.append(random_graph_counts)
 
-# Save the DataFrame to a CSV file
-random_counts_df.to_csv("../data/sheets/random_counts.csv")
+    # Create a DataFrame to store the counts for each random graph
+    columns = [f"motif_{i+1}" for i in range(len(motifs))]
+    index = [f"rand_graph_{i+1}" for i in range(len(random_graphs))]
+    random_counts_df = pd.DataFrame(columns=columns, index=index)
 
-# Print a message indicating that counts for the random graphs are saved to a CSV file
-print("Counts for the random graphs saved to CSV file.")
+    # Fill the DataFrame with the counts for each random graph
+    for i, random_graph_counts in enumerate(random_graph_counts_all):
+        for j, count in random_graph_counts.items():
+            random_counts_df.loc[f"rand_graph_{i+1}", f"motif_{j+1}"] = count
 
+    # Save the DataFrame to a CSV file
+    # random_counts_df.to_csv("../data/sheets/random_counts.csv")
 
-print("Calculating average counts, standard deviation, and Z-scores...")
+    # Print a message indicating that counts for the random graphs are saved to a CSV file
+    print("Counts for the random graphs saved to CSV file.")
 
-# Calculate the average of the counts for each motif in the random graphs
-average_counts = random_counts_df.mean()
+    print("Calculating average counts, standard deviation, and Z-scores...")
 
-# Calculate the standard deviation of the counts for each motif in the random graphs
-std_dev = random_counts_df.std()
+    # Calculate the average of the counts for each motif in the random graphs
+    average_counts = random_counts_df.mean()
 
-# Calculate the Z-scores for each motif, avoiding division by zero
-z_scores = (motif_counts_df.iloc[0] - average_counts) / np.where(
-    std_dev == 0, 1, std_dev
-)
+    # Calculate the standard deviation of the counts for each motif in the random graphs
+    std_dev = random_counts_df.std()
 
+    # Calculate the Z-scores for each motif, avoiding division by zero
+    z_scores = (motif_counts_df.iloc[0] - average_counts) / np.where(
+        std_dev == 0, 1, std_dev
+    )
 
-# Create a dataframe with the average counts, standard deviation, and Z-scores for each motif
-summary_df = pd.DataFrame(
-    {
-        "original_counts": motif_counts_df.iloc[0],
-        "average_counts": average_counts,
-        "std_dev": std_dev,
-        "z_scores": z_scores,
-    }
-)
+    # Calculate the Network Significance Profile (SP) for each motif
+    # Formula: SP_i=Z_i/\sqrt{\sum_jZ_j^2}
+    significance_profile = z_scores / np.sqrt(np.sum(z_scores**2))
 
-# Save the summary dataframe to a CSV file
-summary_df.to_csv("../data/sheets/motif_summary.csv")
+    # Create a dataframe with the average counts, standard deviation, and Z-scores for each motif
+    summary_df = pd.DataFrame(
+        {
+            "graph_name": graph_names[graph_index],
+            "motif": motif_counts_df.columns,
+            "original_count": motif_counts_df.iloc[0],
+            "average_count": average_counts,
+            "std_dev": std_dev,
+            "z_score": z_scores,
+            "significance_profile": significance_profile,
+        }
+    )
 
-print("Summary saved to CSV file.")
+    summary_df = summary_df[
+        [
+            "graph_name",
+            "motif",
+            "original_count",
+            "average_count",
+            "std_dev",
+            "z_score",
+            "significance_profile",
+        ]
+    ]
+
+    # Save the summary dataframe to a CSV file
+    summary_df.to_csv(RESULTS_DIRECTORY + graph_names[graph_index] + ".csv", index=False)
+
+    print("Summary saved to CSV file.")
