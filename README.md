@@ -9,7 +9,7 @@
 ### Dataset
 
 * [Social circles: Twitter](http://snap.stanford.edu/data/ego-Twitter.html)
-* [Gnutella peer-to-peer network](http://snap.stanford.edu/data/p2p-Gnutella05.html)
+* [Social circles: Google+](http://snap.stanford.edu/data/ego-Gplus.html)
 
 
 ### Useful links

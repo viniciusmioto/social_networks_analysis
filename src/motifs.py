@@ -13,7 +13,7 @@
 # -------------------- CONSTANTS -------------------- 
 
 # Directory containing the network files (edge lists)
-GRAPH_FILES_DIRECTORY = "../data/twitter_combined/"
+GRAPH_FILES_DIRECTORY = "../data/gplus/"
 
 # File extension for the network files
 FILE_EXTENSION = ".edges"
@@ -109,7 +109,6 @@ def generate_subgraphs(graph, size):
     Returns:
         list: List of subgraphs of the specified size.
     """
-    print("Generating subgraphs of size", size)
     subgraphs = []
     for nodes in itertools.combinations(graph.nodes(), size):
         # guarantee that there is no isolated node
@@ -117,7 +116,6 @@ def generate_subgraphs(graph, size):
         if nx.is_weakly_connected(subgraph):
             subgraphs.append(subgraph)
 
-    print("Generated", len(subgraphs), "subgraphs")
     return subgraphs
 
 
@@ -132,9 +130,13 @@ def subgraph_count(graph, motifs):
     Returns:
         dict: A dictionary containing the counts of occurrences for each motif.
     """
-    # Generate all subgraphs of the largest size in the list of motifs
+    # Find the largest size of the motifs
     max_size = max([subgraph.number_of_nodes() for subgraph in motifs])
+    print("Generating subgraphs of size", max_size)
+
+    # Generate all subgraphs of the largest size in the list of motifs
     all_subgraphs = generate_subgraphs(graph, max_size)
+    print("Generated", len(all_subgraphs), "subgraphs")
 
     # Initialize a dictionary to store counts for each motif
     motif_counts = {i: 0 for i, motif in enumerate(motifs)}
@@ -259,7 +261,7 @@ for i in range(
         print(f"File {file_name} not found.")
 
 
-print("Motifs loaded.")
+print("\nMotifs loaded.\n")
 
 
 # Read all Real-World Graphs from the directory
@@ -298,7 +300,7 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
 
         # Check if the sampling size is 1
         if sample_size == 1:
-            print("Skipping sample size 1.")
+            print("Working with the original graph.")
             sample_graph = real_world_graph
             graph_name = graph_names[graph_index]
         else:
@@ -310,9 +312,9 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
             )
             graph_name = graph_names[graph_index] + f"_sample_{sample_size}"
 
-        print(
-            f"\nStarting analysis {graph_names[graph_index]} | Graph {graph_index+1}/{len(real_world_graphs)}\n"
-        )
+            print(
+                f"\nStarting analysis {graph_names[graph_index]} | Graph {graph_index+1}/{len(real_world_graphs)}\n"
+            )
 
         print("Counting motifs in the sample of original graph...")
         # Count the occurrences of each motif in the real-world graph
@@ -327,8 +329,6 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
 
         # Rename the columns to match the motif numbers
         motif_counts_df.columns = [f"motif_{i}" for i in range(1, 14)]
-
-        print("Counts for the original saved to CSV file.")
 
         # Generate random graphs using the configuration model
         seeds_random_graphs = [i for i in range(NUM_RANDOM_GRAPHS)]
