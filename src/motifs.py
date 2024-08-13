@@ -28,7 +28,7 @@ NUM_RANDOM_GRAPHS = 25
 RESULTS_DIRECTORY = "../data/"
 
 # Sampling sizes (percentage of the original graph) | 1 for no sampling
-SAMPLING_SIZES = [1]
+SAMPLING_SIZES = [0.1, 0.2, 0.3, 0.4]
 
 # -------------------- LIBRARIES -------------------- #
 
