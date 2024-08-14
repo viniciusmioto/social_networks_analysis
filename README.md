@@ -10,7 +10,7 @@
 
 * [Social circles: Twitter](http://snap.stanford.edu/data/ego-Twitter.html)
 * [Social circles: Google+](http://snap.stanford.edu/data/ego-Gplus.html)
-
+* [Cheminformatics: Enzymes](https://networkrepository.com/chem.php)
 
 ### Useful links
 
