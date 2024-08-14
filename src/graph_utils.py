@@ -13,6 +13,7 @@ import random
 
 # -------------------- FUNCTIONS -------------------- #
 
+
 def get_graph_info(graph):
     """
     Get information about the graph
@@ -22,10 +23,11 @@ def get_graph_info(graph):
     info = {
         "nodes": graph.number_of_nodes(),
         "edges": graph.number_of_edges(),
-        "max_degree": max(graph_degree.values())/2,
+        "max_degree": max(graph_degree.values()) / 2,
         "avg_degree": sum(graph_degree.values()) / len(graph_degree),
     }
     return info
+
 
 def plot_graph(graph):
     """Plots a directed graph."""
@@ -80,7 +82,9 @@ def read_graphs_from_directory(directory, file_extension=".edges"):
 
 def generate_subgraphs(graph, size):
     """
-    Generate all subgraphs of a given size from a graph.
+    Generate all subgraphs of a given size from a graph. 
+    It uses combination (num_nodes, size) to generate all 
+    possible subgraphs of the given size.
 
     Parameters:
         graph (NetworkX graph): The input graph from which subgraphs are generated.
@@ -112,7 +116,7 @@ def subgraph_count(graph, motifs):
     """
     # Find the largest size of the motifs
     max_size = max([subgraph.number_of_nodes() for subgraph in motifs])
-    print("Generating subgraphs of size", max_size)
+    print("Generating subgraphs of size ", max_size)
 
     # Generate all subgraphs of the largest size in the list of motifs
     all_subgraphs = generate_subgraphs(graph, max_size)
@@ -133,7 +137,9 @@ def subgraph_count(graph, motifs):
 
 def generate_sample_graph(original_graph, sample_size, seed=42):
     """
-    Generates a random sample of a graph.
+    Generates a random sample of a graph with sample_size (%).
+    Selects a random sample of nodes from the input graph 
+    and includes all edges between the sampled nodes.
 
     Parameters:
         original_graph (NetworkX graph): The input graph to sample from.

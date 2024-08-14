@@ -1,24 +1,4 @@
-#!./venv/bin/python
-
-# Get the following data for each graph:
-# graph_name, 
-# motif,
-# sample_size, 
-# average_count, 
-# standard_deviation, 
-# z_score,significance_profile
-
-# -------------------- ABOUT -------------------- #
-#
-# Author: Vinícius Mioto
-# Professor: André Luís Vignatti
-# BSc. Computer Science
-# Universidade Federal do Paraná
-#
-# ----------------------------------------------- #
-
-
-# -------------------- CONSTANTS -------------------- 
+# -------------------- CONSTANTS --------------------
 
 # Directory containing the network files (edge lists)
 GRAPH_FILES_DIRECTORY = "../data/enzymes/"
@@ -45,12 +25,9 @@ import os
 import pandas as pd
 import numpy as np
 
+# ---------------- LOAD SELECTED MOTIFS ------------------ #
 
-# -------------------- MAIN -------------------- #
-
-# ---------------- LOAD FILES ------------------ #
-
-# List to store the graphs
+# List to store the selected motifs (13 motifs, all with 3 nodes)
 motifs = []
 
 # Iterate over each file in the MOTIFS_PATH
@@ -68,10 +45,13 @@ for i in range(
         print(f"File {file_name} not found.")
 
 
-print("\nMotifs loaded.\n")
+print("\nThe selected Motifs were loaded.\n")
 
+
+# ---------------- LOAD REAL-WORLD GRAPHS ------------------ #
 
 # Read all Real-World Graphs from the directory
+# These are the graphs to be analyzed
 real_world_graphs = []
 graph_names = []
 
@@ -85,27 +65,35 @@ print("\nReal-World Graphs loaded.\n")
 
 # ---------------- ANALYSIS ------------------ #
 
-# Create a dataframe with the graph_name, average_count, standard_deviation, 
+# Create a dataframe with the graph_name, average_count, standard_deviation,
 # z_score, and significance_profile for each motif and each sample_size
 summary_df = pd.DataFrame(
-    columns=["graph_name", "motif", "sample_size", "average_count", "standard_deviation", "z_score", "significance_profile"]
+    columns=[
+        "graph_name",
+        "motif",
+        "sample_size",
+        "average_count",
+        "standard_deviation",
+        "z_score",
+        "significance_profile",
+    ]
 )
 
 # Seed list for sample graph generation
 seeds_sample_graph = [i for i in range(len(SAMPLING_SIZES))]
+print("Seed list for sample graph generation created:")
+print(seeds_sample_graph)
+
 
 # Iterate over each real-world graph
 for graph_index, real_world_graph in enumerate(real_world_graphs):
     # Iterate over each sampling size
     for sample_size_index, sample_size in enumerate(SAMPLING_SIZES):
-        print(
-            f"\nStarting analysis {graph_names[graph_index]} | Graph {graph_index+1}/{len(real_world_graphs)} | Sampling Size {sample_size}\n"
-        )
+        print(f"\nStarting analysis {graph_names[graph_index]}")
+        print(f" --> Graph {graph_index+1}/{len(real_world_graphs)}")
+        print(f" --> Sampling Size {sample_size}\n")
 
-        # Start using only the sample graph for the analysis
-        # If the sample size is 1, the sample graph is the original graph
-
-        # Check if the sampling size is 1
+        # Check if the sampling size is 1 --> no sampling
         if sample_size == 1:
             print("Working with the original graph.")
             sample_graph = real_world_graph
@@ -115,31 +103,29 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
             sample_graph = gu.generate_sample_graph(
                 real_world_graph,
                 int(sample_size * real_world_graph.number_of_nodes()),
+                # the first sample_size graph will have seed 0,
+                # the second will have seed 1, and so on
                 seed=seeds_sample_graph[sample_size_index],
             )
             graph_name = graph_names[graph_index] + f"_sample_{sample_size}"
 
-            print(
-                f"\nStarting analysis {graph_names[graph_index]} | Graph {graph_index+1}/{len(real_world_graphs)}\n"
-            )
-
-        print("Counting motifs in the sample of original graph...")
         # Count the occurrences of each motif in the real-world graph
+        print("Counting motifs in the sample of original graph...")
         counts = gu.subgraph_count(sample_graph, motifs)
 
-        # Create a dataframe with the counts and save it to a CSV file
+        # Create a dataframe with the counts
         # This dataframe has one line, and each column corresponds to a motif
         motif_counts_df = pd.DataFrame(counts, index=["original"])
-
-        # Save the counts to a CSV file
-        # motif_counts_df.to_csv("../data/sheets/motif_counts.csv", index=False)
 
         # Rename the columns to match the motif numbers
         motif_counts_df.columns = [f"motif_{i}" for i in range(1, 14)]
 
         # Generate random graphs using the configuration model
+        # We'll generate NUM_RANDOM_GRAPHS random graphs for each sample_size graph
         seeds_random_graphs = [i for i in range(NUM_RANDOM_GRAPHS)]
 
+        # the first random graph will have seed 0,
+        # the second will have seed 1, and so on
         random_graphs = [
             gu.generate_configuration_model_graph(sample_graph, seeds_random_graphs[i])
             for i in range(NUM_RANDOM_GRAPHS)
@@ -169,11 +155,6 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
             for j, count in random_graph_counts.items():
                 random_counts_df.loc[f"rand_graph_{i+1}", f"motif_{j+1}"] = count
 
-        # Save the DataFrame to a CSV file
-        # random_counts_df.to_csv("../data/sheets/random_counts.csv")
-
-        # Print a message indicating that counts for the random graphs are saved to a CSV file
-        print("Counts for the random graphs saved to CSV file.")
 
         print("Calculating average counts, standard deviation, and Z-scores...")
 
@@ -211,7 +192,11 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
 
         summary_df = pd.concat([summary_df, aux_df], ignore_index=True)
 
-        print("\nResults of graph", graph_names[graph_index], "saved to the summary DataFrame.\n")
+        print(
+            "\nResults of graph",
+            graph_names[graph_index],
+            "saved to the summary DataFrame.\n",
+        )
 
 # Save the summary DataFrame to a CSV file
 summary_df.to_csv(os.path.join(RESULTS_DIRECTORY, "summary.csv"), index=False)
