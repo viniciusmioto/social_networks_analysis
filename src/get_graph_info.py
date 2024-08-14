@@ -1,9 +1,9 @@
 import graph_utils as gu
 import pandas as pd
 
-GRAPH_FILES_DIRECTORY = "../data/enzymes/"
+GRAPH_FILES_DIRECTORY = "../data/twitter/"
 FILE_EXTENSION = ".edges"
-OUTPUT_FILE = "../data/enzymes_info.csv"
+OUTPUT_FILE = "../data/twitter_info.csv"
 
 
 def main():
