@@ -75,7 +75,7 @@ print("\nReal-World Graphs loaded.\n")
 
 # ---------------- ANALYSIS ------------------ #
 
-# Create a dataframe with the graph_name, average_count, standard_deviation,
+# Create a data-frame with the graph_name, average_count, standard_deviation,
 # z_score, and significance_profile for each motif and each sample_size
 summary_df = pd.DataFrame(
     columns=[
@@ -123,8 +123,8 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
         print("Counting motifs in the sample of original graph...")
         counts = gru.subgraph_count(sample_graph, motifs)
 
-        # Create a dataframe with the counts
-        # This dataframe has one line, and each column corresponds to a motif
+        # Create a data-frame with the counts
+        # This data-frame has one line, and each column corresponds to a motif
         motif_counts_df = pd.DataFrame(counts, index=["original"])
 
         # Rename the columns to match the motif numbers
