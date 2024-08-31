@@ -1,12 +1,7 @@
 import networkx as nx
 import os
-import pandas as pd
-import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
-import plotly.graph_objects as go
-import statistics as sts
-from networkx.algorithms import isomorphism
 import itertools
 import random
 
@@ -29,7 +24,7 @@ def get_graph_info(graph):
     return info
 
 
-def plot_graph(graph):
+def draw_graph(graph):
     """Plots a directed graph."""
     pos = nx.spring_layout(graph, seed=42)  # Positions for all nodes
     nx.draw(
@@ -122,8 +117,8 @@ def subgraph_count(graph, motifs):
     all_subgraphs = generate_subgraphs(graph, max_size)
     print("Generated", len(all_subgraphs), "subgraphs")
 
-    # Initialize a dictionary to store counts for each motif
-    motif_counts = {i: 0 for i, motif in enumerate(motifs)}
+    # Initialize a dictionary to store counts for each motif, starting from 1
+    motif_counts = {i: 0 for i in range(len(motifs))}
 
     # Iterate through all subgraphs and motifs to count occurrences
     for subgraph in all_subgraphs:

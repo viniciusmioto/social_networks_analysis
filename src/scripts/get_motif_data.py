@@ -1,27 +1,37 @@
 # -------------------- CONSTANTS --------------------
 
 # Directory containing the network files (edge lists)
-GRAPH_FILES_DIRECTORY = "../data/enzymes/"
+GRAPH_FILES_DIRECTORY = "../../data/enzymes/"
 
 # File extension for the network files
 FILE_EXTENSION = ".edges"
 
 # Directory containing the edge list files
-MOTIFS_PATH = "../data/motifs/"
+MOTIFS_PATH = "../../data/motifs/"
 
 # Number of random graphs to generate
 NUM_RANDOM_GRAPHS = 25
 
 # Directory to save the results
-RESULTS_DIRECTORY = "../data/"
+RESULTS_DIRECTORY = "../../data/"
 
 # Sampling sizes (percentage of the original graph) | 1 for no sampling
 SAMPLING_SIZES = [1, 0.1, 0.2, 0.3, 0.4]
 
 # -------------------- LIBRARIES -------------------- #
 
-import graph_utils as gu
+import sys
 import os
+
+# Get the absolute path to the src directory
+src_path = os.path.abspath(os.path.join(os.getcwd(), "../"))
+
+# Add src_path to the system path
+sys.path.insert(0, src_path)
+
+# Now you can import your module
+import utils.graph_utils as gru
+
 import pandas as pd
 import numpy as np
 
@@ -38,7 +48,7 @@ for i in range(
     file_path = os.path.join(MOTIFS_PATH, file_name)
     if os.path.exists(file_path):
         # Read the graph from the edge list file
-        motif = gu.read_graph_from_edge_list(file_path)
+        motif = gru.read_graph_from_edge_list(file_path)
         motifs.append(motif)
         print(f"Motif {i} added to the list.")
     else:
@@ -56,7 +66,7 @@ real_world_graphs = []
 graph_names = []
 
 # Add all graphs to the list of NX graphs
-for graph_name, graph in gu.read_graphs_from_directory(GRAPH_FILES_DIRECTORY).items():
+for graph_name, graph in gru.read_graphs_from_directory(GRAPH_FILES_DIRECTORY).items():
     real_world_graphs.append(graph)
     graph_names.append(graph_name)
     print(f"Graph {graph_name} added to the list.")
@@ -100,7 +110,7 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
             graph_name = graph_names[graph_index]
         else:
             # Create a sample graph from the original graph
-            sample_graph = gu.generate_sample_graph(
+            sample_graph = gru.generate_sample_graph(
                 real_world_graph,
                 int(sample_size * real_world_graph.number_of_nodes()),
                 # the first sample_size graph will have seed 0,
@@ -111,7 +121,7 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
 
         # Count the occurrences of each motif in the real-world graph
         print("Counting motifs in the sample of original graph...")
-        counts = gu.subgraph_count(sample_graph, motifs)
+        counts = gru.subgraph_count(sample_graph, motifs)
 
         # Create a dataframe with the counts
         # This dataframe has one line, and each column corresponds to a motif
@@ -127,7 +137,7 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
         # the first random graph will have seed 0,
         # the second will have seed 1, and so on
         random_graphs = [
-            gu.generate_configuration_model_graph(sample_graph, seeds_random_graphs[i])
+            gru.generate_configuration_model_graph(sample_graph, seeds_random_graphs[i])
             for i in range(NUM_RANDOM_GRAPHS)
         ]
 
@@ -142,7 +152,7 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
         # Count the occurrences of each motif in each random graph
         for i, random_graph in enumerate(random_graphs):
             print(f"Counting motifs in random graph {i+1}")
-            random_graph_counts = gu.subgraph_count(random_graph, motifs)
+            random_graph_counts = gru.subgraph_count(random_graph, motifs)
             random_graph_counts_all.append(random_graph_counts)
 
         # Create a DataFrame to store the counts for each random graph

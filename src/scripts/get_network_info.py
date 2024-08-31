@@ -1,9 +1,20 @@
-import graph_utils as gu
+import sys
+import os
+
+# Get the absolute path to the src directory
+src_path = os.path.abspath(os.path.join(os.getcwd(), "../"))
+
+# Add src_path to the system path
+sys.path.insert(0, src_path)
+
+# Now you can import your module
+import utils.graph_utils as gru
+
 import pandas as pd
 
-GRAPH_FILES_DIRECTORY = "../data/twitter/"
+GRAPH_FILES_DIRECTORY = "../../data/enzymes/"
 FILE_EXTENSION = ".edges"
-OUTPUT_FILE = "../data/twitter_info.csv"
+OUTPUT_FILE = "../../results/enzymes_info.csv"
 
 
 def main():
@@ -11,9 +22,10 @@ def main():
         columns=["graph", "nodes", "edges", "max_degree", "avg_degree"]
     )
 
-    graphs = gu.read_graphs_from_directory(GRAPH_FILES_DIRECTORY, FILE_EXTENSION)
+    graphs = gru.read_graphs_from_directory(GRAPH_FILES_DIRECTORY, FILE_EXTENSION)
+
     for graph_name, graph in graphs.items():
-        info = gu.get_graph_info(graph)
+        info = gru.get_graph_info(graph)
         print(f"Graph: {graph_name}")
 
         # save info to the dataframe
