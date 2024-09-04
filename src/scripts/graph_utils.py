@@ -124,7 +124,8 @@ def subgraph_count(graph, motifs):
     for subgraph in all_subgraphs:
         for i, motif in enumerate(motifs):
             if len(subgraph.edges()) == len(motif.edges()):
-                if nx.is_isomorphic(subgraph, motif):
+                # VF2++ Algorithm
+                if nx.vf2pp_is_isomorphic(subgraph, motif):
                     motif_counts[i] += 1
 
     return motif_counts

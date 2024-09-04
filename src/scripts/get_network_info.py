@@ -8,7 +8,7 @@ src_path = os.path.abspath(os.path.join(os.getcwd(), "../"))
 sys.path.insert(0, src_path)
 
 # Now you can import your module
-import utils.graph_utils as gru
+import scripts.graph_utils as gru
 
 import pandas as pd
 

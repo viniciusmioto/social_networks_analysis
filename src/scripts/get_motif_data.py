@@ -30,7 +30,7 @@ src_path = os.path.abspath(os.path.join(os.getcwd(), "../"))
 sys.path.insert(0, src_path)
 
 # Now you can import your module
-import utils.graph_utils as gru
+import scripts.graph_utils as gru
 
 import pandas as pd
 import numpy as np
@@ -141,10 +141,7 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
             for i in range(NUM_RANDOM_GRAPHS)
         ]
 
-        print("Random graphs generated.")
-
-        # Print a message indicating the start of counting motifs in random graphs
-        print("Starting to count motifs in random graphs...")
+        print("Random graphs generated. Starting to count motifs in random graphs...")
 
         # Initialize an empty list to store counts for each random graph
         random_graph_counts_all = []
