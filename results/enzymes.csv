@@ -1,4 +1,4 @@
-graph_name,motif,sample_size,average_count,standard_deviation,z_score,significance_profile
+graph_name,motif,sample_percent,average_count,standard_deviation,z_score,significance_profile
 ENZYMES_g296,motif_1,1,186.52,6.526356819339051,-28.579497744790732,-0.052455060999054844
 ENZYMES_g296,motif_2,1,185.24,6.753270812477957,-27.429671509357178,-0.050344659834675586
 ENZYMES_g296,motif_3,1,633.84,17.118897939606587,-37.02574793284657,-0.0679573827257725

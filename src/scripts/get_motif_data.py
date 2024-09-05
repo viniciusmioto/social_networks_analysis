@@ -22,6 +22,8 @@ SAMPLING_SIZES = [1, 0.1, 0.2, 0.3, 0.4]
 
 import sys
 import os
+import pandas as pd
+import numpy as np
 
 # Get the absolute path to the src directory
 src_path = os.path.abspath(os.path.join(os.getcwd(), "../"))
@@ -31,9 +33,6 @@ sys.path.insert(0, src_path)
 
 # Now you can import your module
 import scripts.graph_utils as gru
-
-import pandas as pd
-import numpy as np
 
 # ---------------- LOAD SELECTED MOTIFS ------------------ #
 
@@ -48,7 +47,7 @@ for i in range(
     file_path = os.path.join(MOTIFS_PATH, file_name)
     if os.path.exists(file_path):
         # Read the graph from the edge list file
-        motif = gru.read_graph_from_edge_list(file_path)
+        motif = gru.read_directed_graph_from_edge_list(file_path)
         motifs.append(motif)
         print(f"Motif {i} added to the list.")
     else:
@@ -76,12 +75,12 @@ print("\nReal-World Graphs loaded.\n")
 # ---------------- ANALYSIS ------------------ #
 
 # Create a data-frame with the graph_name, average_count, standard_deviation,
-# z_score, and significance_profile for each motif and each sample_size
+# z_score, and significance_profile for each motif and each sample_percent
 summary_df = pd.DataFrame(
     columns=[
         "graph_name",
         "motif",
-        "sample_size",
+        "sample_percent",
         "average_count",
         "standard_deviation",
         "z_score",
@@ -98,13 +97,13 @@ print(seeds_sample_graph)
 # Iterate over each real-world graph
 for graph_index, real_world_graph in enumerate(real_world_graphs):
     # Iterate over each sampling size
-    for sample_size_index, sample_size in enumerate(SAMPLING_SIZES):
+    for sample_size_index, sample_percent in enumerate(SAMPLING_SIZES):
         print(f"\nStarting analysis {graph_names[graph_index]}")
         print(f" --> Graph {graph_index+1}/{len(real_world_graphs)}")
-        print(f" --> Sampling Size {sample_size}\n")
+        print(f" --> Sampling Size {sample_percent}\n")
 
         # Check if the sampling size is 1 --> no sampling
-        if sample_size == 1:
+        if sample_percent == 1:
             print("Working with the original graph.")
             sample_graph = real_world_graph
             graph_name = graph_names[graph_index]
@@ -112,12 +111,12 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
             # Create a sample graph from the original graph
             sample_graph = gru.generate_sample_graph(
                 real_world_graph,
-                int(sample_size * real_world_graph.number_of_nodes()),
-                # the first sample_size graph will have seed 0,
+                int(sample_percent * real_world_graph.number_of_nodes()),
+                # the first sample_percent graph will have seed 0,
                 # the second will have seed 1, and so on
                 seed=seeds_sample_graph[sample_size_index],
             )
-            graph_name = graph_names[graph_index] + f"_sample_{sample_size}"
+            graph_name = graph_names[graph_index] + f"_sample_{sample_percent}"
 
         # Count the occurrences of each motif in the real-world graph
         print("Counting motifs in the sample of original graph...")
@@ -131,7 +130,7 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
         motif_counts_df.columns = [f"motif_{i}" for i in range(1, 14)]
 
         # Generate random graphs using the configuration model
-        # We'll generate NUM_RANDOM_GRAPHS random graphs for each sample_size graph
+        # We'll generate NUM_RANDOM_GRAPHS random graphs for each sample_percent graph
         seeds_random_graphs = [i for i in range(NUM_RANDOM_GRAPHS)]
 
         # the first random graph will have seed 0,
@@ -162,7 +161,6 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
             for j, count in random_graph_counts.items():
                 random_counts_df.loc[f"rand_graph_{i+1}", f"motif_{j+1}"] = count
 
-
         print("Calculating average counts, standard deviation, and Z-scores...")
 
         # Calculate the average of the counts for each motif in the random graphs
@@ -189,7 +187,7 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
             {
                 "graph_name": graph_name,
                 "motif": [f"motif_{i+1}" for i in range(len(motifs))],
-                "sample_size": sample_size,
+                "sample_percent": sample_percent,
                 "average_count": average_counts.values,
                 "standard_deviation": std_dev.values,
                 "z_score": z_scores.values,
