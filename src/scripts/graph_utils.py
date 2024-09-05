@@ -330,6 +330,62 @@ def get_sample_rne(original_graph, sample_percent, seed=42):
     return sample_graph
 
 
+def get_sample_hyb(original_graph, sample_percent, P=0.5, seed=42):
+    """
+    Generates a hybrid random sample of original_graph with sample_percent (%).
+    The sample_percent is the percentage of edges from the original_graph.
+    Hybrid (HYB): Combines Random Node-Edge (RNE) and Random Edge (RE) 
+    with probability P and (1-P), respectively.
+
+    Parameters:
+        original_graph (NetworkX graph): The input graph to sample from.
+        sample_percent (float): The percentage of edges to sample.
+        P (float): The probability of using RNE. RE is used with probability (1-P).
+        seed (int): Seed for random sampling.
+
+    Returns:
+        nx.Graph(): NetworkX hybrid sample of the input graph.
+    """
+
+    # Directed or Undirected graph
+    sample_graph = nx.DiGraph() if original_graph.is_directed() else nx.Graph()
+
+    edges_list = list(original_graph.edges())
+    nodes_list = list(original_graph.nodes())
+
+    # Number of edges and nodes to sample
+    num_edges_to_sample = int(len(edges_list) * sample_percent)
+
+    # Set random seed
+    random.seed(seed)
+
+    sampled_edges = set()
+    sampled_nodes = set()
+
+    while len(sampled_edges) < num_edges_to_sample:
+        # Decide whether to use RNE or RE based on probability P
+        if random.random() < P:
+            # Use Random Node-Edge (RNE)
+            node = random.choice(nodes_list)
+            neighbors = list(original_graph.neighbors(node))
+            if neighbors:
+                neighbor = random.choice(neighbors)
+                sampled_edges.add((node, neighbor))
+                sampled_nodes.add(node)
+                sampled_nodes.add(neighbor)
+        else:
+            # Use Random Edge (RE)
+            edge = random.choice(edges_list)
+            sampled_edges.add(edge)
+            sampled_nodes.add(edge[0])
+            sampled_nodes.add(edge[1])
+
+    # Add sampled edges to the sample graph
+    sample_graph.add_edges_from(sampled_edges)
+
+    return sample_graph
+
+
 def generate_configuration_model_graph(original_graph, seed=42):
     """
     Generate a random graph using the configuration model while preserving the properties of an existing graph.
