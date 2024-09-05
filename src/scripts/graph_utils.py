@@ -1,6 +1,5 @@
 import networkx as nx
 import os
-import networkx as nx
 import matplotlib.pyplot as plt
 import itertools
 import random
@@ -210,6 +209,123 @@ def get_sample_rdn(original_graph, sample_percent, seed=42):
 
     # Remove isolated nodes
     sample_graph.remove_nodes_from(list(nx.isolates(sample)))
+
+    return sample_graph
+
+
+def get_sample_rpn(original_graph, sample_percent, seed=42):
+    """
+    Generates a random sample of original_graph with sample_percent (%).
+    The sample_percent is the percentage of nodes from the original_graph.
+    Random Page Rank Node (RDN): Selects a random sample of nodes from the 
+    input graph and includes all edges between the sampled nodes. Each node has 
+    a probability of getting selected that is proportional to its page-rank.
+
+    Parameters:
+        original_graph (NetworkX graph): The input graph to sample from.
+        sample_percent (int): The number of nodes to sample.
+
+    Returns:
+        nx.Graph(): NetworkX random sample of the input graph.
+    """
+
+    # Directed or Undirected graph
+    sample = nx.DiGraph() if original_graph.is_directed() else nx.Graph()
+
+    nodes_list = list(original_graph.nodes())
+
+    # Sample nodes using the seed
+    random.seed(seed)
+
+    nodes_probabilities = list(nx.pagerank(original_graph).values())
+    sample_nodes = random.choices(
+        nodes_list, nodes_probabilities, k=int(len(nodes_list) * sample_percent)
+    )
+
+    # Add all sampled nodes to the sample graph
+    sample = original_graph.subgraph(sample_nodes)
+
+    # Create a copy to avoid frozen graph
+    sample_graph = (
+        nx.DiGraph(sample) if original_graph.is_directed() else nx.Graph(sample)
+    )
+
+    # Remove isolated nodes
+    sample_graph.remove_nodes_from(list(nx.isolates(sample)))
+
+    return sample_graph
+
+def get_sample_re(original_graph, sample_percent, seed=42):
+    """
+    Generates a random sample of original_graph with sample_percent (%).
+    The sample_percent is the percentage of nodes from the original_graph.
+    Random Edge (RE): Selects a random sample of edges from the 
+    input graph.
+
+    Parameters:
+        original_graph (NetworkX graph): The input graph to sample from.
+        sample_percent (int): The number of nodes to sample.
+
+    Returns:
+        nx.Graph(): NetworkX random sample of the input graph.
+    """
+
+    # Directed or Undirected graph
+    sample_graph = nx.DiGraph() if original_graph.is_directed() else nx.Graph()
+
+    edges_list = list(original_graph.edges())
+
+    # Sample nodes using the seed
+    random.seed(seed)
+
+    sample_edges = random.sample(edges_list, int(len(edges_list) * sample_percent))
+
+    # Add all sampled nodes to the sample graph
+    sample_graph.add_edges_from(sample_edges) 
+
+    return sample_graph
+
+
+def get_sample_rne(original_graph, sample_percent, seed=42):
+    """
+    Generates a random sample of original_graph with sample_percent (%).
+    The sample_percent is the percentage of nodes from the original_graph.
+    Random Node-Edge (RNE): Selects a random node and a random incident edge.
+
+    Parameters:
+        original_graph (NetworkX graph): The input graph to sample from.
+        sample_percent (int): The number of nodes to sample.
+
+    Returns:
+        nx.Graph(): NetworkX random sample of the input graph.
+    """
+
+    # Directed or Undirected graph
+    sample = nx.DiGraph() if original_graph.is_directed() else nx.Graph()
+
+    nodes_list = list(original_graph.nodes())
+
+    # Sample nodes using the seed
+    random.seed(seed)
+
+    sampled_origin_nodes = random.choices(
+        nodes_list, k=int(len(nodes_list) * sample_percent)
+    )
+    sampled_nodes = set(sampled_origin_nodes)
+
+    for s in sampled_origin_nodes:
+        neighbors = list(original_graph.neighbors(s))
+        if len(neighbors) > 0:
+            selected_neighbor = random.sample(list(original_graph.neighbors(s)), 1)[0]
+            sampled_nodes.add(selected_neighbor)
+
+    # Add all sampled nodes to the sample graph
+    sample = original_graph.subgraph(list(sampled_nodes))
+
+    # Create a copy to avoid frozen graph
+    sample_graph = (
+        nx.DiGraph(sample) if original_graph.is_directed() else nx.Graph(sample)
+    )
 
     return sample_graph
 
