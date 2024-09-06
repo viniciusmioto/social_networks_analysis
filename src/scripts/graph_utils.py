@@ -3,6 +3,7 @@ import os
 import matplotlib.pyplot as plt
 import itertools
 import random
+from collections import deque
 
 
 # -------------------- FUNCTIONS -------------------- #
@@ -76,8 +77,8 @@ def read_graphs_from_directory(directory, file_extension=".edges"):
 
 def generate_subgraphs(graph, size):
     """
-    Generate all subgraphs of a given size from a graph. 
-    It uses combination (num_nodes, size) to generate all 
+    Generate all subgraphs of a given size from a graph.
+    It uses combination (num_nodes, size) to generate all
     possible subgraphs of the given size.
 
     Parameters:
@@ -130,6 +131,62 @@ def subgraph_count(graph, motifs):
     return motif_counts
 
 
+def generate_configuration_model_graph(original_graph, seed=42):
+    """
+    Generate a random graph using the configuration model while preserving the properties of an existing graph.
+
+    Ignore any self-loops or parallel edges in the original graph.
+
+    Parameters:
+    - original_graph: NetworkX graph object
+
+    Returns:
+    - random_graph: Random graph with properties preserved from the existing graph
+    """
+
+    # If the existing graph is directed, ensure the generated graph is directed as well
+    if original_graph.is_directed():
+        in_degree = dict(original_graph.in_degree())
+        out_degree = dict(original_graph.out_degree())
+        random_graph = nx.directed_configuration_model(
+            in_degree.values(), out_degree.values(), seed=seed
+        )
+    else:
+        degree = dict(original_graph.degree())
+        random_graph = nx.configuration_model(degree.values(), seed=seed)
+
+    # Adjust any additional properties of the generated graph to match those of the existing graph
+    # Update node attributes only for nodes that exist in both graphs
+    common_nodes = set(original_graph.nodes()).intersection(random_graph.nodes())
+    for node in common_nodes:
+        random_graph.nodes[node].update(original_graph.nodes[node])
+
+    # remove self loops
+    random_graph.remove_edges_from(nx.selfloop_edges(random_graph))
+
+    # Add edges between separated components until the graph becomes connected
+    if original_graph.is_directed():
+        while not nx.is_weakly_connected(random_graph):
+            # Find the weakly connected components
+            components = list(nx.weakly_connected_components(random_graph))
+
+            # Add an edge between a random node in each component
+            node1 = list(components[0])[0]
+            node2 = list(components[1])[0]
+            random_graph.add_edge(node1, node2)
+    else:
+        while not nx.is_connected(random_graph):
+            # Find the connected components
+            components = list(nx.connected_components(random_graph))
+
+            # Add an edge between a random node in each component
+            node1 = list(components[0])[0]
+            node2 = list(components[1])[0]
+            random_graph.add_edge(node1, node2)
+
+    return random_graph
+
+
 def get_sample_rn(original_graph, sample_percent, seed=42):
     """
     Generates a random sample of original_graph with sample_percent (%).
@@ -159,9 +216,7 @@ def get_sample_rn(original_graph, sample_percent, seed=42):
 
     # Create a copy to avoid frozen graph
     sample_graph = (
-        nx.DiGraph(sample)
-        if original_graph.is_directed()
-        else nx.Graph(sample)
+        nx.DiGraph(sample) if original_graph.is_directed() else nx.Graph(sample)
     )
 
     # Remove isolated nodes
@@ -174,7 +229,7 @@ def get_sample_rdn(original_graph, sample_percent, seed=42):
     """
     Generates a random sample of original_graph with sample_percent (%).
     The sample_percent is the percentage of nodes from the original_graph.
-    Random Node (RDN): Selects a random sample of nodes from the input graph
+    Random Degree Node (RDN): Selects a random sample of nodes from the input graph
     and includes all edges between the sampled nodes. Each node has a
     probability of getting selected that is proportional to its degree.
 
@@ -255,12 +310,12 @@ def get_sample_rpn(original_graph, sample_percent, seed=42):
 
     return sample_graph
 
+
 def get_sample_re(original_graph, sample_percent, seed=42):
     """
     Generates a random sample of original_graph with sample_percent (%).
     The sample_percent is the percentage of nodes from the original_graph.
-    Random Edge (RE): Selects a random sample of edges from the 
-    input graph.
+    Random Edge (RE): Selects a random sample of edges from the input graph.
 
     Parameters:
         original_graph (NetworkX graph): The input graph to sample from.
@@ -315,7 +370,7 @@ def get_sample_rne(original_graph, sample_percent, seed=42):
 
     for s in sampled_origin_nodes:
         neighbors = list(original_graph.neighbors(s))
-        if len(neighbors) > 0:
+        if neighbors:
             selected_neighbor = random.sample(list(original_graph.neighbors(s)), 1)[0]
             sampled_nodes.add(selected_neighbor)
 
@@ -353,16 +408,10 @@ def get_sample_hyb(original_graph, sample_percent, P=0.5, seed=42):
     edges_list = list(original_graph.edges())
     nodes_list = list(original_graph.nodes())
 
-    # Number of edges and nodes to sample
-    num_edges_to_sample = int(len(edges_list) * sample_percent)
-
     # Set random seed
     random.seed(seed)
 
-    sampled_edges = set()
-    sampled_nodes = set()
-
-    while len(sampled_edges) < num_edges_to_sample:
+    while len(sample_graph.edges()) < int(len(edges_list) * sample_percent):
         # Decide whether to use RNE or RE based on probability P
         if random.random() < P:
             # Use Random Node-Edge (RNE)
@@ -370,73 +419,184 @@ def get_sample_hyb(original_graph, sample_percent, P=0.5, seed=42):
             neighbors = list(original_graph.neighbors(node))
             if neighbors:
                 neighbor = random.choice(neighbors)
-                sampled_edges.add((node, neighbor))
-                sampled_nodes.add(node)
-                sampled_nodes.add(neighbor)
+                sample_graph.add_edge(node, neighbor)
         else:
             # Use Random Edge (RE)
-            edge = random.choice(edges_list)
-            sampled_edges.add(edge)
-            sampled_nodes.add(edge[0])
-            sampled_nodes.add(edge[1])
-
-    # Add sampled edges to the sample graph
-    sample_graph.add_edges_from(sampled_edges)
+            edge = random.sample(edges_list, 1)[0]
+            sample_graph.add_edges_from([edge])
 
     return sample_graph
 
 
-def generate_configuration_model_graph(original_graph, seed=42):
+def get_sample_rnn(original_graph, sample_percent, seed=42):
     """
-    Generate a random graph using the configuration model while preserving the properties of an existing graph.
-
-    Ignore any self-loops or parallel edges in the original graph.
+    Generates a random sample of original_graph with sample_percent (%).
+    The sample_percent is the percentage of nodes from the original_graph.
+    Random Node Neighbor (RNN): Selects a random node and all incident edges.
 
     Parameters:
-    - original_graph: NetworkX graph object
+        original_graph (NetworkX graph): The input graph to sample from.
+        sample_percent (int): The number of nodes to sample.
 
     Returns:
-    - random_graph: Random graph with properties preserved from the existing graph
+        nx.Graph(): NetworkX random sample of the input graph.
     """
 
-    # If the existing graph is directed, ensure the generated graph is directed as well
-    if original_graph.is_directed():
-        in_degree = dict(original_graph.in_degree())
-        out_degree = dict(original_graph.out_degree())
-        random_graph = nx.directed_configuration_model(
-            in_degree.values(), out_degree.values(), seed=seed
-        )
-    else:
-        degree = dict(original_graph.degree())
-        random_graph = nx.configuration_model(degree.values(), seed=seed)
+    # Directed or Undirected graph
+    sample = nx.DiGraph() if original_graph.is_directed() else nx.Graph()
 
-    # Adjust any additional properties of the generated graph to match those of the existing graph
-    # Update node attributes only for nodes that exist in both graphs
-    common_nodes = set(original_graph.nodes()).intersection(random_graph.nodes())
-    for node in common_nodes:
-        random_graph.nodes[node].update(original_graph.nodes[node])
+    nodes_list = list(original_graph.nodes())
 
-    # remove self loops
-    random_graph.remove_edges_from(nx.selfloop_edges(random_graph))
+    # Sample nodes using the seed
+    random.seed(seed)
 
-    # Add edges between separated components until the graph becomes connected
-    if original_graph.is_directed():
-        while not nx.is_weakly_connected(random_graph):
-            # Find the weakly connected components
-            components = list(nx.weakly_connected_components(random_graph))
+    while len(sample.nodes()) < int(len(nodes_list) * sample_percent):
+        sampled_node = random.choice(nodes_list)
+        neighbors = list(original_graph.neighbors(sampled_node))
 
-            # Add an edge between a random node in each component
-            node1 = list(components[0])[0]
-            node2 = list(components[1])[0]
-            random_graph.add_edge(node1, node2)
-    else:
-        while not nx.is_connected(random_graph):
-            # Find the connected components
-            components = list(nx.connected_components(random_graph))
+        for neighbor in neighbors:
+            sample.add_edge(sampled_node, neighbor)
 
-            # Add an edge between a random node in each component
-            node1 = list(components[0])[0]
-            node2 = list(components[1])[0]
-            random_graph.add_edge(node1, node2)
+    # Create a copy to avoid frozen graph
+    sample_graph = (
+        nx.DiGraph(sample) if original_graph.is_directed() else nx.Graph(sample)
+    )
 
-    return random_graph
+    # Remove isolated nodes
+    sample_graph.remove_nodes_from(list(nx.isolates(sample)))
+        
+    return sample_graph
+
+
+def get_sample_bsf(original_graph, sample_percent, seed=42):
+    """
+    Generates a random sample of original_graph with sample_percent (%).
+    The sample_percent is the percentage of nodes from the original_graph.
+    Breadth-Search-First (BSF): Selects a random node and all its neighbors.
+    Them all the incident edges of the neighbors, and so on.
+
+    Parameters:
+        original_graph (NetworkX graph): The input graph to sample from.
+        sample_percent (int): The number of nodes to sample.
+
+    Returns:
+        nx.Graph(): NetworkX random sample of the input graph.
+    """
+
+    # Directed or Undirected graph
+    sample = nx.DiGraph() if original_graph.is_directed() else nx.Graph()
+
+    nodes_list = list(original_graph.nodes())
+    random.seed(seed)
+
+    # Calculate the number of nodes to sample
+    sample_size = int(len(nodes_list) * sample_percent)
+
+    # Set to keep track of visited nodes
+    visited = set()
+
+    while len(visited) < sample_size:
+        # Pick a random unvisited node if we need more nodes
+        unvisited_nodes = list(set(nodes_list) - visited)
+        if not unvisited_nodes:
+            break
+
+        start_node = random.choice(unvisited_nodes)
+
+        # BFS queue
+        queue = deque([start_node])
+        visited.add(start_node)
+
+        while queue and len(visited) < sample_size:
+            current_node = queue.popleft()
+
+            # Get neighbors of the current node
+            for neighbor in original_graph.neighbors(current_node):
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    queue.append(neighbor)
+
+                    # Stop if the sample has reached the target size
+                    if len(visited) >= sample_size:
+                        break
+
+    # Create the sample graph from the visited nodes
+    sample = original_graph.subgraph(list(visited))
+
+    # Create a copy to avoid frozen graph
+    sample_graph = (
+        nx.DiGraph(sample) if original_graph.is_directed() else nx.Graph(sample)
+    )
+
+    # Remove isolated nodes
+    sample_graph.remove_nodes_from(list(nx.isolates(sample)))
+
+    return sample_graph
+
+
+
+def get_sample_dsf(original_graph, sample_percent, seed=42):
+    """
+    Generates a random sample of original_graph with sample_percent (%).
+    The sample_percent is the percentage of nodes from the original_graph.
+    Depth-First-Search (DFS): Selects a random node and explores as deep as 
+    possible along each branch before backtracking.
+
+    Parameters:
+        original_graph (NetworkX graph): The input graph to sample from.
+        sample_percent (int): The number of nodes to sample.
+        seed (int): Random seed for reproducibility.
+
+    Returns:
+        nx.Graph(): NetworkX random sample of the input graph.
+    """
+
+    # Directed or Undirected graph
+    sample = nx.DiGraph() if original_graph.is_directed() else nx.Graph()
+
+    nodes_list = list(original_graph.nodes())
+    random.seed(seed)
+
+    # Calculate the number of nodes to sample
+    sample_size = int(len(nodes_list) * sample_percent)
+
+    # Set to keep track of visited nodes
+    visited = set()
+
+    while len(visited) < sample_size:
+        # Pick a random unvisited node if we need more nodes
+        unvisited_nodes = list(set(nodes_list) - visited)
+        if not unvisited_nodes:
+            break
+
+        start_node = random.choice(unvisited_nodes)
+
+        # DFS stack
+        stack = [start_node]
+        visited.add(start_node)
+
+        while stack and len(visited) < sample_size:
+            current_node = stack.pop()
+
+            # Get neighbors of the current node
+            for neighbor in original_graph.neighbors(current_node):
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    stack.append(neighbor)
+
+                    # Stop if the sample has reached the target size
+                    if len(visited) >= sample_size:
+                        break
+
+    # Create the sample graph from the visited nodes
+    sample = original_graph.subgraph(list(visited))
+
+    # Create a copy to avoid frozen graph
+    sample_graph = (
+        nx.DiGraph(sample) if original_graph.is_directed() else nx.Graph(sample)
+    )
+
+    # Remove isolated nodes
+    sample_graph.remove_nodes_from(list(nx.isolates(sample)))
+
+    return sample_graph
