@@ -272,8 +272,8 @@ def get_sample_rpn(original_graph, sample_percent, seed=42):
     """
     Generates a random sample of original_graph with sample_percent (%).
     The sample_percent is the percentage of nodes from the original_graph.
-    Random Page Rank Node (RDN): Selects a random sample of nodes from the 
-    input graph and includes all edges between the sampled nodes. Each node has 
+    Random Page Rank Node (RDN): Selects a random sample of nodes from the
+    input graph and includes all edges between the sampled nodes. Each node has
     a probability of getting selected that is proportional to its page-rank.
 
     Parameters:
@@ -335,8 +335,8 @@ def get_sample_re(original_graph, sample_percent, seed=42):
 
     sample_edges = random.sample(edges_list, int(len(edges_list) * sample_percent))
 
-    # Add all sampled nodes to the sample graph
-    sample_graph.add_edges_from(sample_edges) 
+    # Add all sampled edges to the sample graph
+    sample_graph.add_edges_from(sample_edges)
 
     return sample_graph
 
@@ -389,7 +389,7 @@ def get_sample_hyb(original_graph, sample_percent, P=0.5, seed=42):
     """
     Generates a hybrid random sample of original_graph with sample_percent (%).
     The sample_percent is the percentage of edges from the original_graph.
-    Hybrid (HYB): Combines Random Node-Edge (RNE) and Random Edge (RE) 
+    Hybrid (HYB): Combines Random Node-Edge (RNE) and Random Edge (RE)
     with probability P and (1-P), respectively.
 
     Parameters:
@@ -464,7 +464,7 @@ def get_sample_rnn(original_graph, sample_percent, seed=42):
 
     # Remove isolated nodes
     sample_graph.remove_nodes_from(list(nx.isolates(sample)))
-        
+
     return sample_graph
 
 
@@ -534,12 +534,11 @@ def get_sample_bsf(original_graph, sample_percent, seed=42):
     return sample_graph
 
 
-
 def get_sample_dsf(original_graph, sample_percent, seed=42):
     """
     Generates a random sample of original_graph with sample_percent (%).
     The sample_percent is the percentage of nodes from the original_graph.
-    Depth-First-Search (DFS): Selects a random node and explores as deep as 
+    Depth-First-Search (DFS): Selects a random node and explores as deep as
     possible along each branch before backtracking.
 
     Parameters:
@@ -598,5 +597,123 @@ def get_sample_dsf(original_graph, sample_percent, seed=42):
 
     # Remove isolated nodes
     sample_graph.remove_nodes_from(list(nx.isolates(sample)))
+
+    return sample_graph
+
+
+def get_sample_drn(original_graph, sample_percent, seed=42):
+    """
+    Generates a random sample of original_graph with sample_percent (%).
+    The sample_percent is the percentage of nodes from the original_graph.
+    Deletion of Random Node (DRN): Selects a random sample of nodes and delete
+    them from the input graph.
+
+    Parameters:
+        original_graph (NetworkX graph): The input graph to sample from.
+        sample_percent (int): The number of nodes to sample.
+
+    Returns:
+        nx.Graph(): NetworkX random sample of the input graph.
+    """
+
+    # Directed or Undirected graph
+    sample = original_graph.copy()
+
+    nodes_list = list(original_graph.nodes())
+
+    # Sample nodes using the seed
+    random.seed(seed)
+    sample_nodes = random.sample(nodes_list, int(sample_percent * len(nodes_list)))
+
+    # Add all "unsampled" nodes to the sample graph
+    remaining_nodes = [n for n in nodes_list if n not in sample_nodes]
+
+    sample = original_graph.subgraph(remaining_nodes)
+
+    # Create a copy to avoid frozen graph
+    sample_graph = (
+        nx.DiGraph(sample) if original_graph.is_directed() else nx.Graph(sample)
+    )
+
+    # Remove isolated nodes
+    sample_graph.remove_nodes_from(list(nx.isolates(sample)))
+
+    return sample_graph
+
+
+def get_sample_dre(original_graph, sample_percent, seed=42):
+    """
+    Generates a random sample of original_graph with sample_percent (%).
+    The sample_percent is the percentage of nodes from the original_graph.
+    Random Edge (RE): Selects a random sample of edges from the input graph.
+
+    Parameters:
+        original_graph (NetworkX graph): The input graph to sample from.
+        sample_percent (int): The number of nodes to sample.
+
+    Returns:
+        nx.Graph(): NetworkX random sample of the input graph.
+    """
+
+    # Directed or Undirected graph
+    sample_graph = nx.DiGraph() if original_graph.is_directed() else nx.Graph()
+
+    edges_list = list(original_graph.edges())
+
+    # Sample edges using the seed
+    random.seed(seed)
+
+    sample_edges = random.sample(edges_list, int(len(edges_list) * sample_percent))
+
+    remaining_edges = [e for e in edges_list if e not in sample_edges]
+
+    # Add all "unsampled" edges to the sample graph
+    sample_graph.add_edges_from(remaining_edges)
+
+    return sample_graph
+
+
+def get_sample_drne(original_graph, sample_percent, seed=42):
+    """
+    Generates a random sample of original_graph with sample_percent (%).
+    The sample_percent is the percentage of nodes from the original_graph.
+    Delete Random Node-Edge (DRNE): Selects a random node and a
+    random incident edge, them delete from the graph.
+
+    Parameters:
+        original_graph (NetworkX graph): The input graph to sample from.
+        sample_percent (int): The number of nodes to sample.
+
+    Returns:
+        nx.Graph(): NetworkX random sample of the input graph.
+    """
+
+    # Directed or Undirected graph
+    sample_graph = nx.DiGraph() if original_graph.is_directed() else nx.Graph()
+
+    nodes_list = list(original_graph.nodes())
+    edges_list = list(original_graph.edges())
+
+    # Sample nodes using the seed
+    random.seed(seed)
+
+    sampled_origin_nodes = random.choices(
+        nodes_list, k=int(len(nodes_list) * sample_percent)
+    )
+
+    sampled_nodes = set(sampled_origin_nodes)
+    sampled_edges = []
+
+    for s in sampled_origin_nodes:
+        neighbors = list(original_graph.neighbors(s))
+        if neighbors:
+            selected_neighbor = random.sample(list(original_graph.neighbors(s)), 1)[0]
+            sampled_nodes.add(selected_neighbor)
+            sampled_edges.append((s, selected_neighbor))
+
+    # Add all "unsampled" nodes to the sample graph
+    remaining_edges = [e for e in edges_list if e not in sampled_edges]
+
+    sample_graph.add_edges_from(remaining_edges)
 
     return sample_graph
