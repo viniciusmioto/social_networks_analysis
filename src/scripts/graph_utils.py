@@ -1,5 +1,6 @@
 import networkx as nx
 import os
+import numpy as np
 import matplotlib.pyplot as plt
 import itertools
 import random
@@ -715,5 +716,190 @@ def get_sample_drne(original_graph, sample_percent, seed=42):
     remaining_edges = [e for e in edges_list if e not in sampled_edges]
 
     sample_graph.add_edges_from(remaining_edges)
+
+    return sample_graph
+
+
+def get_sample_ff(original_graph, sample_percent, p=0.5, r=0.3, seed=42):
+    """
+    Implements the Forest Fire Sampling (FFS) method.
+
+    Parameters:
+        original_graph (NetworkX graph): The input graph to sample from.
+        sample_percent (int): The number of nodes to sample as a percentage.
+        p (float): Forward burning probability (0 < p < 1).
+        r (float): Backward burning ratio (0 < r < 1).
+        seed (int): Random seed for reproducibility.
+
+    Returns:
+        NetworkX graph: Sampled subgraph from the input graph.
+    """
+
+    # Set the random seed for reproducibility
+    random.seed(seed)
+
+    # Directed or Undirected graph
+    sample = nx.DiGraph() if original_graph.is_directed() else nx.Graph()
+
+    # Convert the sample percent to the number of nodes
+    total_nodes = len(original_graph.nodes())
+    sample_size = int(total_nodes * sample_percent)
+
+    # Set to track visited nodes to avoid cycling
+    visited = set()
+
+    # Get a random start node (ambassador node)
+    nodes_list = list(original_graph.nodes())
+    start_node = random.choice(nodes_list)
+
+    # BFS-like queue initialized with the start node
+    queue = deque([start_node])
+    visited.add(start_node)
+
+    # Fire spreads until we reach the sample size or the fire stops
+    while len(visited) < sample_size and queue:
+        current_node = queue.popleft()
+
+        # Get the neighbors (both in-links and out-links)
+        neighbors = list(original_graph.neighbors(current_node))
+
+        # Sample forward-burning neighbors with probability p
+        num_forward_burn = min(
+            len(neighbors), max(1, np.random.binomial(len(neighbors), p))
+        )
+        forward_neighbors = random.sample(neighbors, num_forward_burn)
+
+        for neighbor in forward_neighbors:
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append(neighbor)
+
+        # For directed graphs, sample backward neighbors with probability r * p
+        if original_graph.is_directed():
+            in_neighbors = list(original_graph.predecessors(current_node))
+            num_backward_burn = min(
+                len(in_neighbors), max(1, np.random.binomial(len(in_neighbors), r * p))
+            )
+            backward_neighbors = random.sample(in_neighbors, num_backward_burn)
+
+            for neighbor in backward_neighbors:
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    queue.append(neighbor)
+
+        # Stop once we've reached the target sample size
+        if len(visited) >= sample_size:
+            break
+
+    # Create the sample graph from the visited nodes
+    sample = original_graph.subgraph(list(visited))
+
+    # Create a copy to avoid frozen graph
+    sample_graph = (
+        nx.DiGraph(sample) if original_graph.is_directed() else nx.Graph(sample)
+    )
+
+    # Remove isolated nodes
+    sample_graph.remove_nodes_from(list(nx.isolates(sample_graph)))
+
+    return sample_graph
+
+
+def get_sample_sff(
+    original_graph, sample_percent, p=0.7, r=0.3, max_attempts=5, seed=42
+):
+    """
+    Implements the Spontaneous Forest Fire Sampling (SFFS) method.
+
+    Parameters:
+        original_graph (NetworkX graph): The input graph to sample from.
+        sample_percent (int): The number of nodes to sample as a percentage.
+        p (float): Forward burning probability (0 < p < 1).
+        r (float): Backward burning ratio (0 < r < 1).
+        max_attempts (int): Maximum spontaneous jumps allowed before giving up.
+        seed (int): Random seed for reproducibility.
+
+    Returns:
+        NetworkX graph: Sampled subgraph from the input graph.
+    """
+
+    # Set the random seed for reproducibility
+    random.seed(seed)
+
+    # Directed or Undirected graph
+    sample = nx.DiGraph() if original_graph.is_directed() else nx.Graph()
+
+    # Convert the sample percent to the number of nodes
+    total_nodes = len(original_graph.nodes())
+    sample_size = int(total_nodes * sample_percent)
+
+    # Set to track visited nodes to avoid cycling
+    visited = set()
+
+    # Get a random start node (ambassador node)
+    nodes_list = list(original_graph.nodes())
+    start_node = random.choice(nodes_list)
+
+    # BFS-like queue initialized with the start node
+    queue = deque([start_node])
+    visited.add(start_node)
+
+    attempts = 0
+
+    while len(visited) < sample_size and attempts < max_attempts:
+        if not queue:
+            # Spontaneous jump: pick a random new start node that hasn't been visited
+            remaining_nodes = list(set(nodes_list) - visited)
+            if not remaining_nodes:
+                break
+            start_node = random.choice(remaining_nodes)
+            queue.append(start_node)
+            visited.add(start_node)
+            attempts += 1
+            continue
+
+        current_node = queue.popleft()
+
+        # Get the neighbors (both in-links and out-links)
+        neighbors = list(original_graph.neighbors(current_node))
+
+        # Sample forward-burning neighbors with probability p
+        num_forward_burn = min(
+            len(neighbors), max(1, np.random.binomial(len(neighbors), p))
+        )
+        forward_neighbors = random.sample(neighbors, num_forward_burn)
+
+        for neighbor in forward_neighbors:
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append(neighbor)
+
+        # For directed graphs, sample backward neighbors with probability r * p
+        if original_graph.is_directed():
+            in_neighbors = list(original_graph.predecessors(current_node))
+            num_backward_burn = min(
+                len(in_neighbors), max(1, np.random.binomial(len(in_neighbors), r * p))
+            )
+            backward_neighbors = random.sample(in_neighbors, num_backward_burn)
+
+            for neighbor in backward_neighbors:
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    queue.append(neighbor)
+
+        # Stop once we've reached the target sample size
+        if len(visited) >= sample_size:
+            break
+
+    # Create the sample graph from the visited nodes
+    sample = original_graph.subgraph(list(visited))
+
+    # Create a copy to avoid frozen graph
+    sample_graph = (
+        nx.DiGraph(sample) if original_graph.is_directed() else nx.Graph(sample)
+    )
+
+    # Remove isolated nodes
+    sample_graph.remove_nodes_from(list(nx.isolates(sample_graph)))
 
     return sample_graph
