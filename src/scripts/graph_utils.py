@@ -602,6 +602,152 @@ def get_sample_dsf(original_graph, sample_percent, seed=42):
     return sample_graph
 
 
+def get_sample_rw(
+    original_graph, sample_percent, fly_back_prob=0.25, max_steps=100, seed=42
+):
+    """
+    Generates a random sample of original_graph with sample_percent (%).
+    The sample_percent is the percentage of nodes from the original_graph.
+    Random Walk (RW): Selects a random node and performs a random walk.
+    The walker has a chance to "fly back" to a randomly chosen node or pick a
+    new starting node if the maximum number of steps is reached.
+
+    Parameters:
+        original_graph (NetworkX graph): The input graph to sample from.
+        sample_percent (int): The number of nodes to sample.
+        fly_back_prob (float): The probability of flying back to a random node.
+        max_steps (int): The maximum number of steps before picking a new node.
+        seed (int): Random seed for reproducibility.
+
+    Returns:
+        nx.Graph(): NetworkX random sample of the input graph.
+    """
+
+    random.seed(seed)
+
+    # Directed or Undirected graph
+    sample = nx.DiGraph() if original_graph.is_directed() else nx.Graph()
+
+    nodes_list = list(original_graph.nodes())
+    sample_size = int(len(nodes_list) * sample_percent)
+
+    # Set to keep track of visited nodes
+    visited = set()
+
+    # Start the sampling process
+    while len(visited) < sample_size:
+        # Pick a random unvisited node if we need more nodes
+        unvisited_nodes = list(set(nodes_list) - visited)
+        if not unvisited_nodes:
+            break
+
+        current_node = random.choice(unvisited_nodes)
+        visited.add(current_node)
+
+        step_count = 0
+
+        while len(visited) < sample_size:
+            # Random fly-back probability or exceed max steps
+            if random.random() < fly_back_prob or step_count >= max_steps:
+                # Pick a new random starting node
+                unvisited_nodes = list(set(nodes_list) - visited)
+                if not unvisited_nodes:
+                    break
+                current_node = random.choice(unvisited_nodes)
+                visited.add(current_node)
+                step_count = 0  # Reset the step count after flying back
+            else:
+                # Choose a random neighbor of the current node
+                neighbors = list(original_graph.neighbors(current_node))
+                if neighbors:
+                    current_node = random.choice(neighbors)
+                    if current_node not in visited:
+                        visited.add(current_node)
+                step_count += 1
+
+    # Create the sample graph from the visited nodes
+    sample = original_graph.subgraph(list(visited))
+
+    # Create a copy to avoid frozen graph
+    sample_graph = (
+        nx.DiGraph(sample) if original_graph.is_directed() else nx.Graph(sample)
+    )
+
+    # Remove isolated nodes
+    sample_graph.remove_nodes_from(list(nx.isolates(sample)))
+
+    return sample_graph
+
+
+def get_sample_rj(original_graph, sample_percent, jump_prob=0.15, seed=42):
+    """
+    Generates a random sample of original_graph with sample_percent (%).
+    The sample_percent is the percentage of nodes from the original_graph.
+    Random Jump (RJ): Selects a random node and performs a random walk,
+    but at each step, the walker has a chance to "jump" to a new random node.
+
+    Parameters:
+        original_graph (NetworkX graph): The input graph to sample from.
+        sample_percent (int): The percentage of nodes to sample.
+        jump_prob (float): The probability of jumping to a random new node.
+        seed (int): Random seed for reproducibility.
+
+    Returns:
+        nx.Graph(): NetworkX random sample of the input graph.
+    """
+
+    random.seed(seed)
+
+    # Directed or Undirected graph
+    sample = nx.DiGraph() if original_graph.is_directed() else nx.Graph()
+
+    nodes_list = list(original_graph.nodes())
+    sample_size = int(len(nodes_list) * sample_percent)
+
+    # Set to keep track of visited nodes
+    visited = set()
+
+    # Start the sampling process
+    while len(visited) < sample_size:
+        # Pick a random unvisited node if we need more nodes
+        unvisited_nodes = list(set(nodes_list) - visited)
+        if not unvisited_nodes:
+            break
+
+        current_node = random.choice(unvisited_nodes)
+        visited.add(current_node)
+
+        while len(visited) < sample_size:
+            # Random jump to a new starting node with 'jump_prob'
+            if random.random() < jump_prob:
+                # Pick a new random unvisited node
+                unvisited_nodes = list(set(nodes_list) - visited)
+                if not unvisited_nodes:
+                    break
+                current_node = random.choice(unvisited_nodes)
+                visited.add(current_node)
+            else:
+                # Choose a random neighbor of the current node
+                neighbors = list(original_graph.neighbors(current_node))
+                if neighbors:
+                    current_node = random.choice(neighbors)
+                    if current_node not in visited:
+                        visited.add(current_node)
+
+    # Create the sample graph from the visited nodes
+    sample = original_graph.subgraph(list(visited))
+
+    # Create a copy to avoid frozen graph
+    sample_graph = (
+        nx.DiGraph(sample) if original_graph.is_directed() else nx.Graph(sample)
+    )
+
+    # Remove isolated nodes
+    sample_graph.remove_nodes_from(list(nx.isolates(sample)))
+
+    return sample_graph
+
+
 def get_sample_drn(original_graph, sample_percent, seed=42):
     """
     Generates a random sample of original_graph with sample_percent (%).
@@ -903,3 +1049,45 @@ def get_sample_sff(
     sample_graph.remove_nodes_from(list(nx.isolates(sample_graph)))
 
     return sample_graph
+
+
+def get_sample_by_method(
+    original_graph, sample_percent, method="rn", seed=42, **kwargs
+):
+    """
+    Centralized function to choose the sampling method based on the given abbreviation.
+
+    :param original_graph: The original graph to sample from.
+    :param sample_percent: The percentage of the graph to sample.
+    :param method: Abbreviation of the method to use for sampling. (e.g., "rn", "bsf", "sffs")
+    :param seed: Random seed for reproducibility.
+    :param kwargs: Additional parameters specific to the selected method.
+    :return: Sampled graph.
+    """
+
+    methods = {
+        "rn": get_sample_rn,
+        "rdn": get_sample_rdn,
+        "rpn": get_sample_rpn,
+        "re": get_sample_re,
+        "rne": get_sample_rne,
+        "hyb": get_sample_hyb,
+        "rnn": get_sample_rnn,
+        "bsf": get_sample_bsf,
+        "dsf": get_sample_dsf,
+        "rw": get_sample_rw,
+        "rj": get_sample_rj,
+        "drn": get_sample_drn,
+        "dre": get_sample_dre,
+        "drne": get_sample_drne,
+        "ff": get_sample_ff,
+        "sff": get_sample_sff,
+    }
+
+    # Get the correct function based on the method
+    if method in methods:
+        return methods[method](original_graph, sample_percent, seed=seed, **kwargs)
+    else:
+        raise ValueError(
+            f"Invalid method abbreviation '{method}' provided. Available methods are: {', '.join(methods.keys())}"
+        )
