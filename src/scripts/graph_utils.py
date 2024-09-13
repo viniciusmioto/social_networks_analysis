@@ -979,6 +979,9 @@ def get_sample_sff(
     total_nodes = len(original_graph.nodes())
     sample_size = int(total_nodes * sample_percent)
 
+    if original_graph.is_directed():
+        sample_size = int(sample_size / 2)
+
     # Set to track visited nodes to avoid cycling
     visited = set()
 
@@ -996,8 +999,10 @@ def get_sample_sff(
         if not queue:
             # Spontaneous jump: pick a random new start node that hasn't been visited
             remaining_nodes = list(set(nodes_list) - visited)
+           
             if not remaining_nodes:
                 break
+
             start_node = random.choice(remaining_nodes)
             queue.append(start_node)
             visited.add(start_node)

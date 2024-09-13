@@ -12,9 +12,9 @@ import scripts.graph_utils as gru
 
 import pandas as pd
 
-GRAPH_FILES_DIRECTORY = "../../data/enzymes/"
+GRAPH_FILES_DIRECTORY = "../../data/twitter_samples/"
 FILE_EXTENSION = ".edges"
-OUTPUT_FILE = "../../results/enzymes_info.csv"
+OUTPUT_FILE = "../../results/twitter_samples_info.csv"
 
 
 def main():
