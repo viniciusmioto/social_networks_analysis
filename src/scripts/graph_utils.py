@@ -1038,9 +1038,6 @@ def get_sample_sff(
                     visited.add(neighbor)
                     queue.append(neighbor)
 
-        # Stop once we've reached the target sample size
-        if len(visited) >= sample_size:
-            break
 
     # Create the sample graph from the visited nodes
     sample = original_graph.subgraph(list(visited))

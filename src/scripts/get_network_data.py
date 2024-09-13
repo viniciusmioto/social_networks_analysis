@@ -149,6 +149,8 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
         z_scores / np.sqrt(np.sum(z_scores**2)) if np.sum(z_scores**2) != 0 else 0.0
     )
 
+    info = gru.get_graph_info(graph)
+
     # Add the results to the summary DataFrame
     # Use a auxiliary DataFrame to combine the results
     aux_df = pd.DataFrame(
@@ -159,6 +161,10 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
             "standard_deviation": std_dev.values,
             "z_score": z_scores.values,
             "significance_profile": significance_profile,
+            "nodes": info["nodes"],
+            "edges": info["edges"],
+            "max_degree": info["max_degree"],
+            "avg_degree": info["avg_degree"],
         }
     )
 
