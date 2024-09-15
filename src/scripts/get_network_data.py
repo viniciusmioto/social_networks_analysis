@@ -149,7 +149,7 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
         z_scores / np.sqrt(np.sum(z_scores**2)) if np.sum(z_scores**2) != 0 else 0.0
     )
 
-    info = gru.get_graph_info(graph)
+    info = gru.get_graph_info(real_world_graph)
 
     # Add the results to the summary DataFrame
     # Use a auxiliary DataFrame to combine the results
