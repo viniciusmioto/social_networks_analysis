@@ -979,9 +979,6 @@ def get_sample_sff(
     total_nodes = len(original_graph.nodes())
     sample_size = int(total_nodes * sample_percent)
 
-    if original_graph.is_directed():
-        sample_size = int(sample_size / 2)
-
     # Set to track visited nodes to avoid cycling
     visited = set()
 
@@ -999,7 +996,7 @@ def get_sample_sff(
         if not queue:
             # Spontaneous jump: pick a random new start node that hasn't been visited
             remaining_nodes = list(set(nodes_list) - visited)
-           
+
             if not remaining_nodes:
                 break
 
@@ -1011,33 +1008,36 @@ def get_sample_sff(
 
         current_node = queue.popleft()
 
-        # Get the neighbors (both in-links and out-links)
-        neighbors = list(original_graph.neighbors(current_node))
-
-        # Sample forward-burning neighbors with probability p
-        num_forward_burn = min(
-            len(neighbors), max(1, np.random.binomial(len(neighbors), p))
-        )
-        forward_neighbors = random.sample(neighbors, num_forward_burn)
-
-        for neighbor in forward_neighbors:
-            if neighbor not in visited:
-                visited.add(neighbor)
-                queue.append(neighbor)
-
-        # For directed graphs, sample backward neighbors with probability r * p
+        # Get the neighbors (both in-links and out-links) for directed graphs
         if original_graph.is_directed():
+            out_neighbors = list(original_graph.successors(current_node))
             in_neighbors = list(original_graph.predecessors(current_node))
-            num_backward_burn = min(
-                len(in_neighbors), max(1, np.random.binomial(len(in_neighbors), r * p))
-            )
-            backward_neighbors = random.sample(in_neighbors, num_backward_burn)
+        else:
+            out_neighbors = list(original_graph.neighbors(current_node))
+            in_neighbors = []
 
-            for neighbor in backward_neighbors:
+        # Combine both in-links and out-links into a single list of neighbors
+        combined_neighbors = out_neighbors + in_neighbors
+
+        if combined_neighbors:
+            # Sample neighbors with forward-burning probability p
+            num_burn = max(1, np.random.binomial(len(combined_neighbors), p))
+
+            # Sample neighbors uniformly from combined_neighbors
+            selected_neighbors = random.sample(combined_neighbors, num_burn)
+
+            for neighbor in selected_neighbors:
                 if neighbor not in visited:
                     visited.add(neighbor)
                     queue.append(neighbor)
 
+                # Break the loop if the sample size is reached
+                if len(visited) >= sample_size:
+                    break
+
+        # Add another break to stop the outer loop if the sample size is reached
+        if len(visited) >= sample_size:
+            break
 
     # Create the sample graph from the visited nodes
     sample = original_graph.subgraph(list(visited))
@@ -1049,6 +1049,12 @@ def get_sample_sff(
 
     # Remove isolated nodes
     sample_graph.remove_nodes_from(list(nx.isolates(sample_graph)))
+
+    print(f"total_nodes: {total_nodes}")
+    print(f"sample_size: {sample_size}")
+    print(f"sample_nodes_before: {len(sample.nodes())}")
+    print(f"sample_nodes_after: {len(sample_graph.nodes())}")
+    print(f"attempts: {attempts}")
 
     return sample_graph
 
