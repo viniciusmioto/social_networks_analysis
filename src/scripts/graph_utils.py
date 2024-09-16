@@ -40,6 +40,90 @@ def draw_graph(graph, seed=42):
     plt.show()
 
 
+def plot_degree_distribution(G):
+    # In-degree and out-degree for directed graphs
+    if G.is_directed():
+        in_degrees = dict(G.in_degree())
+        out_degrees = dict(G.out_degree())
+
+        in_degree_values = list(in_degrees.values())
+        out_degree_values = list(out_degrees.values())
+
+        # In-degree distribution plot
+        plt.figure(figsize=(12, 6))
+
+        plt.subplot(1, 2, 1)
+        plt.hist(
+            in_degree_values,
+            bins=range(min(in_degree_values), max(in_degree_values) + 1, 1),
+            alpha=0.75,
+            color="blue",
+            edgecolor="black",
+        )
+        plt.title("In-Degree Distribution")
+        plt.xlabel("In-Degree")
+        plt.ylabel("Frequency")
+
+        # Out-degree distribution plot
+        plt.subplot(1, 2, 2)
+        plt.hist(
+            out_degree_values,
+            bins=range(min(out_degree_values), max(out_degree_values) + 1, 1),
+            alpha=0.75,
+            color="green",
+            edgecolor="black",
+        )
+        plt.title("Out-Degree Distribution")
+        plt.xlabel("Out-Degree")
+        plt.ylabel("Frequency")
+
+        plt.tight_layout()
+        plt.show()
+    else:
+        print("The graph is not directed. Use a directed graph (DiGraph).")
+
+
+def plot_degree_distribution_scatter(G, log_log=True):
+    # In-degree and out-degree for directed graphs
+    if G.is_directed():
+        in_degrees = dict(G.in_degree())
+        out_degrees = dict(G.out_degree())
+
+        in_degree_values = list(in_degrees.values())
+        out_degree_values = list(out_degrees.values())
+
+        plt.figure(figsize=(12, 6))
+
+        # In-degree scatter plot
+        plt.subplot(1, 2, 1)
+        in_deg_count = np.bincount(in_degree_values)
+        plt.scatter(range(len(in_deg_count)), in_deg_count, color="blue")
+        plt.title("In-Degree Distribution")
+        plt.xlabel("In-Degree")
+        plt.ylabel("Frequency")
+
+        if log_log:
+            plt.xscale("log")
+            plt.yscale("log")
+
+        # Out-degree scatter plot
+        plt.subplot(1, 2, 2)
+        out_deg_count = np.bincount(out_degree_values)
+        plt.scatter(range(len(out_deg_count)), out_deg_count, color="green")
+        plt.title("Out-Degree Distribution")
+        plt.xlabel("Out-Degree")
+        plt.ylabel("Frequency")
+
+        if log_log:
+            plt.xscale("log")
+            plt.yscale("log")
+
+        plt.tight_layout()
+        plt.show()
+    else:
+        print("The graph is not directed. Use a directed graph (DiGraph).")
+
+
 def get_graph_name(file_path):
     """Extracts the name of a graph from its file path."""
     return os.path.basename(file_path).split(".")[0]
