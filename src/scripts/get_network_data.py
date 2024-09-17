@@ -1,7 +1,7 @@
 # -------------------- CONSTANTS --------------------
 
 # Directory containing the network files (edge lists)
-GRAPH_FILES_DIRECTORY = "../../data/twitter_samples/"
+GRAPH_FILES_DIRECTORY = "../../data/twitter_2/"
 
 # File extension for the network files
 FILE_EXTENSION = ".edges"
@@ -177,6 +177,6 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
     )
 
 # Save the summary DataFrame to a CSV file
-summary_df.to_csv(os.path.join(RESULTS_DIRECTORY, "summary.csv"), index=False)
+summary_df.to_csv(os.path.join(RESULTS_DIRECTORY, "summary_tt2.csv"), index=False)
 
 print("Summary saved to CSV file.\n\n")
