@@ -2,9 +2,11 @@ import networkx as nx
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 import itertools
 import random
 from collections import deque
+from PIL import Image
 
 
 # -------------------- FUNCTIONS -------------------- #
@@ -38,6 +40,78 @@ def draw_graph(graph, seed=42):
         arrowsize=10,
     )
     plt.show()
+
+
+def get_image_paths_from_directory(directory, valid_extensions=(".png", ".jpg", ".jpeg")):
+    """
+    Scans a directory and returns a list of image file paths.
+    Filters files by valid image extensions.
+    """
+    return sorted([os.path.join(directory, file) for file in os.listdir(directory) 
+            if file.lower().endswith(valid_extensions)])
+
+
+def plot_line_chart_with_images(data, title, x_label, y_label, image_directory, image_y_offset=-0.07):
+    # Get image paths from the directory
+    image_paths = get_image_paths_from_directory(image_directory)
+    
+    # Ensure that the number of images matches the number of motifs
+    motifs = data['motif'].unique()
+    if len(image_paths) != len(motifs):
+        raise ValueError(f"Number of images ({len(image_paths)}) does not match the number of motifs ({len(motifs)}).")
+    
+    fig = go.Figure()
+    
+    # Add the line chart
+    for graph_name in data["graph_name"].unique():
+        df = data[data["graph_name"] == graph_name]
+        fig.add_trace(
+            go.Scatter(
+                x=df["motif"], y=df[y_label], mode="lines+markers", name=graph_name
+            )
+        )
+    
+    # Hide the default X-axis tick labels (motif_1, motif_2, etc.)
+    fig.update_xaxes(showticklabels=True)
+    
+    # Add images as custom X-tick labels
+    for i, image_path in enumerate(image_paths):
+        fig.add_layout_image(
+            dict(
+                source=Image.open(image_path),  # Open image from path
+                xref="x",
+                yref="paper",                   # Use 'paper' for relative y positioning
+                x=motifs[i],                    # Place at each x tick
+                y=image_y_offset,               # Adjust below the x-axis
+                sizex=0.5,                      # Adjust size
+                sizey=0.5,
+                xanchor="center",
+                yanchor="top"
+            )
+        )
+    
+    # Adjust layout and display
+    fig.update_layout(
+        title=title,
+        xaxis_title=None,
+        yaxis_title=y_label,
+        xaxis=dict(tickvals=motifs),  # Ensure correct x-axis positions for the motifs
+    )
+    fig.show()
+
+
+# Plot line chart of Z-scores for each graph_name
+def plot_line_chart(data, title, x_label, y_label):
+    fig = go.Figure()
+    for graph_name in data["graph_name"].unique():
+        df = data[data["graph_name"] == graph_name]
+        fig.add_trace(
+            go.Scatter(
+                x=df["motif"], y=df[y_label], mode="lines+markers", name=graph_name
+            )
+        )
+    fig.update_layout(title=title, xaxis_title=x_label, yaxis_title=y_label)
+    fig.show()
 
 
 def plot_degree_distribution(G):
@@ -1134,11 +1208,6 @@ def get_sample_sff(
     # Remove isolated nodes
     sample_graph.remove_nodes_from(list(nx.isolates(sample_graph)))
 
-    print(f"total_nodes: {total_nodes}")
-    print(f"sample_size: {sample_size}")
-    print(f"sample_nodes_before: {len(sample.nodes())}")
-    print(f"sample_nodes_after: {len(sample_graph.nodes())}")
-    print(f"attempts: {attempts}")
 
     return sample_graph
 
