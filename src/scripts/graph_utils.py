@@ -42,26 +42,37 @@ def draw_graph(graph, seed=42):
     plt.show()
 
 
-def get_image_paths_from_directory(directory, valid_extensions=(".png", ".jpg", ".jpeg")):
+def get_image_paths_from_directory(
+    directory, valid_extensions=(".png", ".jpg", ".jpeg")
+):
     """
     Scans a directory and returns a list of image file paths.
     Filters files by valid image extensions.
     """
-    return sorted([os.path.join(directory, file) for file in os.listdir(directory) 
-            if file.lower().endswith(valid_extensions)])
+    return sorted(
+        [
+            os.path.join(directory, file)
+            for file in os.listdir(directory)
+            if file.lower().endswith(valid_extensions)
+        ]
+    )
 
 
-def plot_line_chart_with_images(data, title, x_label, y_label, image_directory, image_y_offset=-0.07):
+def plot_line_chart_with_images(
+    data, title, x_label, y_label, image_directory, image_y_offset=-0.07
+):
     # Get image paths from the directory
     image_paths = get_image_paths_from_directory(image_directory)
-    
+
     # Ensure that the number of images matches the number of motifs
-    motifs = data['motif'].unique()
+    motifs = data["motif"].unique()
     if len(image_paths) != len(motifs):
-        raise ValueError(f"Number of images ({len(image_paths)}) does not match the number of motifs ({len(motifs)}).")
-    
+        raise ValueError(
+            f"Number of images ({len(image_paths)}) does not match the number of motifs ({len(motifs)})."
+        )
+
     fig = go.Figure()
-    
+
     # Add the line chart
     for graph_name in data["graph_name"].unique():
         df = data[data["graph_name"] == graph_name]
@@ -70,26 +81,26 @@ def plot_line_chart_with_images(data, title, x_label, y_label, image_directory, 
                 x=df["motif"], y=df[y_label], mode="lines+markers", name=graph_name
             )
         )
-    
+
     # Hide the default X-axis tick labels (motif_1, motif_2, etc.)
     fig.update_xaxes(showticklabels=True)
-    
+
     # Add images as custom X-tick labels
     for i, image_path in enumerate(image_paths):
         fig.add_layout_image(
             dict(
                 source=Image.open(image_path),  # Open image from path
                 xref="x",
-                yref="paper",                   # Use 'paper' for relative y positioning
-                x=motifs[i],                    # Place at each x tick
-                y=image_y_offset,               # Adjust below the x-axis
-                sizex=0.5,                      # Adjust size
+                yref="paper",  # Use 'paper' for relative y positioning
+                x=motifs[i],  # Place at each x tick
+                y=image_y_offset,  # Adjust below the x-axis
+                sizex=0.5,  # Adjust size
                 sizey=0.5,
                 xanchor="center",
-                yanchor="top"
+                yanchor="top",
             )
         )
-    
+
     # Adjust layout and display
     fig.update_layout(
         title=title,
@@ -257,13 +268,38 @@ def generate_subgraphs(graph, size):
     return subgraphs
 
 
-def subgraph_count(graph, motifs):
+def generate_anchored_subgraphs(graph, size):
+    """
+    Generate all subgraphs of a given size that include a specific anchor node.
+    
+    Parameters:
+        graph (NetworkX graph): The input graph.
+        anchor (node): The node that should serve as the anchor in each subgraph.
+        size (int): The size of subgraphs to generate.
+    
+    Returns:
+        list: List of subgraphs of the specified size that include the anchor node.
+    """
+    subgraphs = set()
+
+    for node in graph.nodes():
+        neighbors = sorted(list(graph.neighbors(node)))
+        subgraph_nodes = set(neighbors)
+        subgraph_nodes.add(node)
+
+        if len(subgraph_nodes) >= size:
+            subgraphs.add(graph.subgraph(subgraph_nodes))
+    
+    return list(subgraphs)
+
+
+def subgraph_count(graph, motifs, anchored=False):
     """
     Count the occurrences of a list of subgraphs within a given graph.
 
     Parameters:
         graph (NetworkX graph): The input graph in which occurrences are counted.
-        motifs (list): List of subgraphs whose occurrences are being counted.
+        motifs (list of NetworkX graphs): List of subgraphs whose occurrences are being counted.
 
     Returns:
         dict: A dictionary containing the counts of occurrences for each motif.
@@ -273,7 +309,7 @@ def subgraph_count(graph, motifs):
     print("Generating subgraphs of size ", max_size)
 
     # Generate all subgraphs of the largest size in the list of motifs
-    all_subgraphs = generate_subgraphs(graph, max_size)
+    all_subgraphs = generate_anchored_subgraphs(graph, max_size) if anchored else generate_subgraphs(graph, max_size)
     print("Generated", len(all_subgraphs), "subgraphs")
 
     # Initialize a dictionary to store counts for each motif, starting from 1
@@ -288,6 +324,10 @@ def subgraph_count(graph, motifs):
                     motif_counts[i] += 1
 
     return motif_counts
+
+
+
+
 
 
 def generate_configuration_model_graph(original_graph, seed=42):
@@ -1207,7 +1247,6 @@ def get_sample_sff(
 
     # Remove isolated nodes
     sample_graph.remove_nodes_from(list(nx.isolates(sample_graph)))
-
 
     return sample_graph
 
