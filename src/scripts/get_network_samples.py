@@ -13,9 +13,9 @@ RESULTS_DIRECTORY = "../../data/twitter_samples/"
 FILE_EXTENSION = ".edges"
 
 # Sampling sizes (percentage of the original graph) | 1 for no sampling
-SAMPLING_SIZES = [0.1, 0.2, 0.3, 0.4]
+SAMPLING_SIZES = [0.10, 0.15, 0.20]
 
-SAMPLING_METHODS = ["rn", "rpn", "bsf", "rj", "sff"]
+SAMPLING_METHODS = ["rn", "rpn", "rw", "sff"]
 
 # Get the absolute path to the src directory
 src_path = os.path.abspath(os.path.join(os.getcwd(), "../"))

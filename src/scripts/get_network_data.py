@@ -1,19 +1,26 @@
 # -------------------- CONSTANTS --------------------
 
 # Directory containing the network files (edge lists)
-GRAPH_FILES_DIRECTORY = "../../data/twitter_2/"
+GRAPH_FILES_DIRECTORY = "../../data/twitter/"
 
 # File extension for the network files
 FILE_EXTENSION = ".edges"
 
+# name before the index (e.g. triangle1.edges), 
+# let empty for index only
+MOTIFS_NAME = 'claw'
+
+NUM_MOTIFS = 9
+
 # Directory containing the edge list files
-MOTIFS_PATH = "../../data/motifs/"
+MOTIFS_PATH = "../../data/motifs_4/"
 
 # Number of random graphs to generate
 NUM_RANDOM_GRAPHS = 25
 
 # Directory to save the results
 RESULTS_DIRECTORY = "../../data/"
+
 
 
 # -------------------- LIBRARIES -------------------- #
@@ -39,9 +46,9 @@ motifs = []
 
 # Iterate over each file in the MOTIFS_PATH
 for i in range(
-    1, 14
+    1, NUM_MOTIFS + 1
 ):  # Assuming files are named file1.edges, file2.edges, ..., file13.edges
-    file_name = f"motif{i}.edges"
+    file_name = f"{MOTIFS_NAME}{i}.edges"
     file_path = os.path.join(MOTIFS_PATH, file_name)
     if os.path.exists(file_path):
         # Read the graph from the edge list file
@@ -96,7 +103,7 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
     motif_counts_df = pd.DataFrame(counts, index=["original"])
 
     # Rename the columns to match the motif numbers
-    motif_counts_df.columns = [f"motif_{i}" for i in range(1, 14)]
+    motif_counts_df.columns = [f"motif_{i}" for i in range(1, NUM_MOTIFS + 1)]
 
     # Generate random graphs using the configuration model
     seeds_random_graphs = [i for i in range(NUM_RANDOM_GRAPHS)]
@@ -177,6 +184,6 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
     )
 
 # Save the summary DataFrame to a CSV file
-summary_df.to_csv(os.path.join(RESULTS_DIRECTORY, "summary_tt2.csv"), index=False)
+summary_df.to_csv(os.path.join(RESULTS_DIRECTORY, "summary_twitter.csv"), index=False)
 
 print("Summary saved to CSV file.\n\n")
