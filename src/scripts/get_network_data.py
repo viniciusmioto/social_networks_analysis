@@ -1,7 +1,7 @@
 # -------------------- CONSTANTS --------------------
 
 # Directory containing the network files (edge lists)
-GRAPH_FILES_DIRECTORY = "../../data/twitter/"
+GRAPH_FILES_DIRECTORY = "../../data/twitter_samples/"
 
 # File extension for the network files
 FILE_EXTENSION = ".edges"
@@ -15,11 +15,16 @@ NUM_MOTIFS = 9
 # Directory containing the edge list files
 MOTIFS_PATH = "../../data/motifs_4/"
 
+# Matching method
+IS_ANCHORED = True
+
 # Number of random graphs to generate
 NUM_RANDOM_GRAPHS = 25
 
 # Directory to save the results
 RESULTS_DIRECTORY = "../../data/"
+
+RESULT_FILE = "twitter_motifs_4_anchored.csv"
 
 
 
@@ -96,7 +101,7 @@ summary_df = pd.DataFrame(
 # Iterate over each real-world graph
 for graph_index, real_world_graph in enumerate(real_world_graphs):
     # Count the occurrences of each motif in the real-world graph
-    counts = gru.subgraph_count(real_world_graph, motifs)
+    counts = gru.subgraph_count(real_world_graph, motifs, anchored=IS_ANCHORED)
 
     # Create a data-frame with the counts
     # This data-frame has one line, and each column corresponds to a motif
@@ -123,7 +128,7 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
     # Count the occurrences of each motif in each random graph
     for i, random_graph in enumerate(random_graphs):
         print(f"Counting motifs in random graph {i+1}")
-        random_graph_counts = gru.subgraph_count(random_graph, motifs)
+        random_graph_counts = gru.subgraph_count(random_graph, motifs, anchored=IS_ANCHORED)
         random_graph_counts_all.append(random_graph_counts)
 
     # Create a DataFrame to store the counts for each random graph
@@ -163,7 +168,7 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
     aux_df = pd.DataFrame(
         {
             "graph_name": graph_names[graph_index],
-            "motif": [f"motif_{i+1}" for i in range(len(motifs))],
+            "motif": [f"{MOTIFS_NAME}{i+1}" for i in range(len(motifs))],
             "average_count": average_counts.values,
             "standard_deviation": std_dev.values,
             "z_score": z_scores.values,
@@ -184,6 +189,6 @@ for graph_index, real_world_graph in enumerate(real_world_graphs):
     )
 
 # Save the summary DataFrame to a CSV file
-summary_df.to_csv(os.path.join(RESULTS_DIRECTORY, "summary_twitter.csv"), index=False)
+summary_df.to_csv(os.path.join(RESULTS_DIRECTORY + RESULT_FILE), index=False)
 
 print("Summary saved to CSV file.\n\n")

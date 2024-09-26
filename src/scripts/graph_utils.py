@@ -242,6 +242,7 @@ def read_graphs_from_directory(directory, file_extension=".edges"):
             graph_name = get_graph_name(file)
             graph = read_directed_graph_from_edge_list(os.path.join(directory, file))
             graphs[graph_name] = graph
+    
     return graphs
 
 
@@ -262,7 +263,7 @@ def generate_subgraphs(graph, size):
     for nodes in itertools.combinations(graph.nodes(), size):
         # guarantee that there is no isolated node
         subgraph = graph.subgraph(nodes)
-        if nx.is_weakly_connected(subgraph):
+        if nx.is_weakly_connected(subgraph) or nx.is_strongly_connected(subgraph):
             subgraphs.append(subgraph)
 
     return subgraphs
@@ -274,23 +275,28 @@ def generate_anchored_subgraphs(graph, size):
     
     Parameters:
         graph (NetworkX graph): The input graph.
-        anchor (node): The node that should serve as the anchor in each subgraph.
         size (int): The size of subgraphs to generate.
     
     Returns:
         list: List of subgraphs of the specified size that include the anchor node.
     """
-    subgraphs = set()
+    subgraphs_set = set()
 
-    for node in graph.nodes():
-        neighbors = sorted(list(graph.neighbors(node)))
-        subgraph_nodes = set(neighbors)
-        subgraph_nodes.add(node)
+    for anchor in graph.nodes():
+        # Get neighbors and add the anchor node itself
+        subgraph_nodes = set(graph.neighbors(anchor))
+        subgraph_nodes.add(anchor)
 
+        # Only consider subgraphs that are large enough
         if len(subgraph_nodes) >= size:
-            subgraphs.add(graph.subgraph(subgraph_nodes))
-    
-    return list(subgraphs)
+            # Convert to tuple and add it to the set to ensure uniqueness
+            # Sorting to avoid different orderings of the same nodes
+            subgraph_tuple = tuple(sorted(subgraph_nodes))  
+            subgraphs_set.add(subgraph_tuple)
+
+    # Generate a list of subgraphs based on the node sets in subgraphs_set
+    return [graph.subgraph(subgraph) for subgraph in subgraphs_set]
+
 
 
 def subgraph_count(graph, motifs, anchored=False):
@@ -308,26 +314,34 @@ def subgraph_count(graph, motifs, anchored=False):
     max_size = max([subgraph.number_of_nodes() for subgraph in motifs])
     print("Generating subgraphs of size ", max_size)
 
-    # Generate all subgraphs of the largest size in the list of motifs
-    all_subgraphs = generate_anchored_subgraphs(graph, max_size) if anchored else generate_subgraphs(graph, max_size)
-    print("Generated", len(all_subgraphs), "subgraphs")
-
     # Initialize a dictionary to store counts for each motif, starting from 1
     motif_counts = {i: 0 for i in range(len(motifs))}
 
-    # Iterate through all subgraphs and motifs to count occurrences
-    for subgraph in all_subgraphs:
-        for i, motif in enumerate(motifs):
-            if len(subgraph.edges()) == len(motif.edges()):
-                # VF2++ Algorithm
-                if nx.vf2pp_is_isomorphic(subgraph, motif):
+    if anchored:
+        all_subgraphs = generate_anchored_subgraphs(graph, max_size)
+        # Iterate through all subgraphs and motifs to count occurrences
+        for subgraph in all_subgraphs:
+            for i, motif in enumerate(motifs):
+                if isinstance(graph, nx.DiGraph):
+                    matcher = nx.algorithms.isomorphism.DiGraphMatcher(subgraph, motif)
+                else:
+                    matcher = nx.algorithms.isomorphism.GraphMatcher(subgraph, motif)
+                
+                if matcher.subgraph_is_isomorphic():
                     motif_counts[i] += 1
+    else:
+        all_subgraphs = generate_subgraphs(graph, max_size)
+        # Iterate through all subgraphs and motifs to count occurrences
+        for subgraph in all_subgraphs:
+            for i, motif in enumerate(motifs):
+                if len(subgraph.edges()) == len(motif.edges()):
+                    # VF2++ Algorithm
+                    if nx.vf2pp_is_isomorphic(subgraph, motif):
+                        motif_counts[i] += 1
+
+    print("Generated ", len(all_subgraphs), " subgraphs")
 
     return motif_counts
-
-
-
-
 
 
 def generate_configuration_model_graph(original_graph, seed=42):
