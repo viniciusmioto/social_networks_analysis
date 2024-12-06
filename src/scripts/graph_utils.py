@@ -283,6 +283,29 @@ def generate_subgraphs(graph, size):
     return subgraph_dict
 
 
+# def generate_subgraphs(graph, size):
+#     """
+#     Generate all subgraphs of a given size from a graph.
+#     It uses combination (num_nodes, size) to generate all
+#     possible subgraphs of the given size.
+
+#     Parameters:
+#         graph (NetworkX graph): The input graph from which subgraphs are generated.
+#         size (int): The size of subgraphs to generate (number of nodes).
+
+#     Returns:
+#         list: List of subgraphs of the specified size.
+#     """
+#     subgraphs = []
+#     for nodes in itertools.combinations(graph.nodes(), size):
+#         # guarantee that there is no isolated node
+#         subgraph = graph.subgraph(nodes)
+#         if nx.is_weakly_connected(subgraph) or nx.is_strongly_connected(subgraph):
+#             subgraphs.append(subgraph)
+
+#     return subgraphs
+
+
 def generate_anchored_subgraphs(graph, size):
     """
     Generate all subgraphs of a given size that include a specific anchor node.
